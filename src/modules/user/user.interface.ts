@@ -1,32 +1,31 @@
 import { Types } from "mongoose";
 
 export enum Role {
+  SUPER_ADMIN = "SUPER_ADMIN",
+  ADMIN = "ADMIN",
   USER = "USER",
   AGENT = "AGENT",
-  ADMIN = "ADMIN",
-}
-
-export enum ApprovalStatus {
-  PENDING = "PENDING",
-  APPROVED = "APPROVED",
-  SUSPENDED = "SUSPENDED",
 }
 
 export enum IsActive {
-    ACTIVE = "ACTIVE",
-    INACTIVE = "INACTIVE",
-    BLOCKED = "BLOCKED"
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
+  BLOCKED = "BLOCKED",
 }
 
 export interface IUser {
   _id?: Types.ObjectId;
   name: string;
-  phone: string;
+  email: string;
+  phone?: string;
   password: string;
-  role: Role;
+  address?: string;
+  nid?: string;
+  isDeleted?: boolean;
   isActive?: IsActive;
-  commissionRate?: number;
-  approvalStatus?: ApprovalStatus;
+  isVerified?: boolean;
+  role: Role;
+  wallet?: Types.ObjectId;
   createdAt?: Date;
   updatedAt?: Date;
 }
