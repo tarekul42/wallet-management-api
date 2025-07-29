@@ -167,13 +167,25 @@ const forgotPassword = catchAsync(
     });
   }
 );
+const register = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const user = await AuthServices.registerUser(req.body);
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.CREATED,
+      message: "User registered successfully",
+      data: user,
+    });
+  }
+);
 
 export const AuthControllers = {
+  register,
   credentialsLogin,
   getNewAccessToken,
   logout,
-  resetPassword,
+  changePassword,
   setPassword,
   forgotPassword,
-  changePassword
+  resetPassword,
 };

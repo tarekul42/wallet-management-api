@@ -25,6 +25,7 @@ router.post(
   checkAuth(...Object.values(Role)),
   AuthControllers.resetPassword
 );
+router.post("/register", AuthControllers.register);
 
 router.get(
   "/google",

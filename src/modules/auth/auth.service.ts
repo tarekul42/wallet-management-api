@@ -130,8 +130,28 @@ const changePassword = async (
 
   user!.save();
 };
+const registerUser = async (userData: any) => {
+  // Check if user already exists
+  const existing = await User.findOne({ email: userData.email });
+  if (existing)
+    throw new AppError(httpStatus.BAD_REQUEST, "Email already registered");
+
+  // Create user
+  const user = new User(userData);
+  await user.save();
+
+  // Create wallet with initial balance
+  // (Assumes Wallet model exists and is imported)
+  const { Wallet } = await import("../wallet/wallet.model");
+  const wallet = await Wallet.create({ owner: user._id, balance: 50 });
+  user.wallet = wallet._id;
+  await user.save();
+
+  return user;
+};
 
 export const AuthServices = {
+  registerUser,
   getNewAccessToken,
   changePassword,
   setPassword,
