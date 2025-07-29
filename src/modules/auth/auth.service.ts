@@ -140,8 +140,6 @@ const registerUser = async (userData: any) => {
   const user = new User(userData);
   await user.save();
 
-  // Create wallet with initial balance
-  // (Assumes Wallet model exists and is imported)
   const { Wallet } = await import("../wallet/wallet.model");
   const wallet = await Wallet.create({ owner: user._id, balance: 50 });
   user.wallet = wallet._id;

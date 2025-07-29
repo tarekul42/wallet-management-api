@@ -1,11 +1,11 @@
-import  httpStatus  from 'http-status-codes';
+import httpStatus from "http-status-codes";
 import { NextFunction, Request, Response } from "express";
 import AppError from "../errorHelpers/AppError";
 import { envVars } from "../config/env";
 import { verifyToken } from "../utils/jwt";
 import { JwtPayload } from "jsonwebtoken";
 import { User } from "../modules/user/user.model";
-import { IsActive } from '../modules/user/user.interface';
+import { IsActive } from "../modules/user/user.interface";
 
 export const checkAuth =
   (...authRoles: string[]) =>
@@ -19,8 +19,8 @@ export const checkAuth =
 
       const token = authHeader.split(" ")[1];
 
-      if(!token) {
-        throw new AppError(401, "No token provided, Please login!")
+      if (!token) {
+        throw new AppError(401, "No token provided, Please login!");
       }
 
       const verifiedToken = verifyToken(
@@ -31,7 +31,10 @@ export const checkAuth =
       const isUserExists = await User.findById(verifiedToken.userId);
 
       if (!isUserExists) {
-        throw new AppError(httpStatus.BAD_REQUEST, "User Does Not Exists. Please login again");
+        throw new AppError(
+          httpStatus.BAD_REQUEST,
+          "User Does Not Exists. Please login again"
+        );
       }
 
       if (
@@ -48,8 +51,8 @@ export const checkAuth =
         throw new AppError(httpStatus.BAD_REQUEST, "User is deleted");
       }
 
-      if(!isUserExists.isVerified) {
-        throw new AppError(httpStatus.BAD_REQUEST, "User is not verified")
+      if (!isUserExists.isVerified) {
+        throw new AppError(httpStatus.BAD_REQUEST, "User is not verified");
       }
 
       if (!verifiedToken) {

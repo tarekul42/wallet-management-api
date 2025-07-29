@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import  bcryptjs  from 'bcryptjs';
+import bcryptjs from "bcryptjs";
 import passport from "passport";
 import { User } from "../modules/user/user.model";
 import { IsActive } from "../modules/user/user.interface";
