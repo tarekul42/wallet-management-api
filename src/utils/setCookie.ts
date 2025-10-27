@@ -7,19 +7,18 @@ export interface AuthTokens {
 }
 
 export const setAuthCookie = (res: Response, tokenInfo: AuthTokens) => {
+  const cookieOptions = {
+    httpOnly: true,
+    secure: envVars.NODE_ENV === "production",
+    sameSite: "none" as const,
+    maxAge: 1000 * 60 * 60 * 24,
+  };
+
   if (tokenInfo.accessToken) {
-    res.cookie("accessToken", tokenInfo.accessToken, {
-      httpOnly: true,
-      secure: envVars.NODE_ENV === "production",
-      sameSite: "none",
-    });
+    res.cookie("accessToken", tokenInfo.accessToken, cookieOptions);
   }
 
   if (tokenInfo.refreshToken) {
-    res.cookie("refreshToken", tokenInfo.refreshToken, {
-      httpOnly: true,
-      secure: envVars.NODE_ENV === "production",
-      sameSite: "none",
-    });
+    res.cookie("refreshToken", tokenInfo.refreshToken, cookieOptions);
   }
 };
