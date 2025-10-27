@@ -3,10 +3,10 @@ import dotenv from "dotenv";
 dotenv.config();
 
 interface EnvConfig {
-  PORT: string;
+  PORT: number;
   DB_URL: string;
   NODE_ENV: "development" | "production";
-  BCRYPT_SALT_ROUND: string;
+  BCRYPT_SALT_ROUND: number;
   JWT_ACCESS_SECRET: string;
   JWT_ACCESS_EXPIRES: string;
   JWT_REFRESH_SECRET: string;
@@ -41,12 +41,21 @@ const loadEnvVariables = (): EnvConfig => {
     }
   });
 
+  const port = Number(process.env.Port);
+  if (isNaN(port)) {
+    throw new Error("Invalid PORT environment variable");
+  }
+
+  const bcryptSaltRound = Number(process.env.BCRYPT_SALT_ROUND);
+  if (isNaN(bcryptSaltRound)) {
+    throw new Error("Invalid BCRYPT_SALT_ROUND environment variable");
+  }
+
   return {
-    PORT: process.env.PORT as string,
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    DB_URL: process.env.DB_URL!,
+    PORT: port,
+    DB_URL: process.env.DB_URL as string,
     NODE_ENV: process.env.NODE_ENV as "development" | "production",
-    BCRYPT_SALT_ROUND: process.env.BCRYPT_SALT_ROUND as string,
+    BCRYPT_SALT_ROUND: bcryptSaltRound,
     JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET as string,
     JWT_ACCESS_EXPIRES: process.env.JWT_ACCESS_EXPIRES as string,
     JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET as string,
