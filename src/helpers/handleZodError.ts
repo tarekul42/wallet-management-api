@@ -3,20 +3,22 @@ import {
   TErrorSources,
   TGenericErrorResponse,
 } from "../interfaces/error.types";
+import { StatusCodes } from "http-status-codes";
 
-export const handleZodError = (err: ZodError): TGenericErrorResponse => {
+const handleZodError = (err: ZodError): TGenericErrorResponse => {
   const errorSources: TErrorSources[] = [];
 
   err.issues.forEach((issue: ZodIssue) => {
     errorSources.push({
-      path: issue.path[issue.path.length - 1],
+      path: issue.path.join("."),
       message: issue.message,
     });
   });
 
   return {
-    statusCode: 400,
+    statusCode: StatusCodes.BAD_REQUEST,
     message: "Zod Error",
-    errorSources,
   };
 };
+
+export default handleZodError;

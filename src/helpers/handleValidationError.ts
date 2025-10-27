@@ -4,8 +4,8 @@ import {
   TGenericErrorResponse,
 } from "../interfaces/error.types";
 
-export const handleValidationError = (
-  err: mongoose.Error.ValidationError,
+const handleValidationError = (
+  err: mongoose.Error.ValidationError
 ): TGenericErrorResponse => {
   const errorSources: TErrorSources[] = [];
 
@@ -16,7 +16,7 @@ export const handleValidationError = (
       errorSources.push({
         path: errorObject.path,
         message: errorObject.message,
-      }),
+      })
   );
 
   return {
@@ -25,3 +25,5 @@ export const handleValidationError = (
     errorSources,
   };
 };
+
+export default handleValidationError;
