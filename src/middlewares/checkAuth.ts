@@ -1,4 +1,4 @@
-import httpStatus from "http-status-codes";
+import { StatusCodes } from "http-status-codes";
 import { NextFunction, Request, Response } from "express";
 import AppError from "../errorHelpers/AppError";
 import { envVars } from "../config/env";
@@ -14,13 +14,19 @@ export const checkAuth =
       const authHeader = req.headers.authorization;
 
       if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        throw new AppError(403, "No token recieved, Please login!");
+        throw new AppError(
+          StatusCodes.FORBIDDEN,
+          "No token recieved, Please login!"
+        );
       }
 
       const token = authHeader.split(" ")[1];
 
       if (!token) {
-        throw new AppError(401, "No token provided, Please login!");
+        throw new AppError(
+          StatusCodes.UNAUTHORIZED,
+          "No token provided, Please login!"
+        );
       }
 
       const verifiedToken = verifyToken(
@@ -28,11 +34,25 @@ export const checkAuth =
         envVars.JWT_ACCESS_SECRET
       ) as JwtPayload;
 
+      if (!verifiedToken) {
+        throw new AppError(
+          StatusCodes.FORBIDDEN,
+          "You are not authorized to view this route"
+        );
+      }
+
+      if (!authRoles.includes(verifiedToken.role)) {
+        throw new AppError(
+          StatusCodes.FORBIDDEN,
+          "You are not permitted to access this route"
+        );
+      }
+
       const isUserExists = await User.findById(verifiedToken.userId);
 
       if (!isUserExists) {
         throw new AppError(
-          httpStatus.BAD_REQUEST,
+          StatusCodes.BAD_REQUEST,
           "User Does Not Exists. Please login again"
         );
       }
@@ -42,25 +62,31 @@ export const checkAuth =
         isUserExists.isActive === IsActive.INACTIVE
       ) {
         throw new AppError(
-          httpStatus.BAD_REQUEST,
+          StatusCodes.BAD_REQUEST,
           `User is ${isUserExists.isActive}`
         );
       }
 
       if (isUserExists.isDeleted) {
-        throw new AppError(httpStatus.BAD_REQUEST, "User is deleted");
+        throw new AppError(StatusCodes.BAD_REQUEST, "User is deleted");
       }
 
       if (!isUserExists.isVerified) {
-        throw new AppError(httpStatus.BAD_REQUEST, "User is not verified");
+        throw new AppError(StatusCodes.BAD_REQUEST, "User is not verified");
       }
 
       if (!verifiedToken) {
-        throw new AppError(403, "You are not authorized to view this route");
+        throw new AppError(
+          StatusCodes.FORBIDDEN,
+          "You are not authorized to view this route"
+        );
       }
 
       if (!authRoles.includes(verifiedToken.role)) {
-        throw new AppError(403, "You are not permitter to access this route");
+        throw new AppError(
+          StatusCodes.FORBIDDEN,
+          "You are not permitted to access this route"
+        );
       }
 
       req.user = verifiedToken;
