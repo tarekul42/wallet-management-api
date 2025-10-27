@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from "express";
-import { ZodObject } from "zod";
+import { AnyZodObject } from "zod";
 
-export const validateRequest =
-  (zodSchema: ZodObject) =>
+const validateRequest =
+  (zodSchema: AnyZodObject) =>
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (req.body.data) {
@@ -14,3 +14,5 @@ export const validateRequest =
       next(error);
     }
   };
+
+export default validateRequest;
