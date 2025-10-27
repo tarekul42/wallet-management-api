@@ -27,4 +27,4 @@ const verifyToken = (token: string, secret: string) => {
   }
 };
 
-export { generateToken, verifyToken };
+export { generateToken, verifyToken, TokenError };

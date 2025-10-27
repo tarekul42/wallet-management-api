@@ -3,7 +3,7 @@ import { envVars } from "../config/env";
 import AppError from "../errorHelpers/AppError";
 import { IsActive, IUser } from "../modules/user/user.interface";
 import { User } from "../modules/user/user.model";
-import { generateToken, verifyToken } from "./jwt";
+import { generateToken, TokenError, verifyToken } from "./jwt";
 import { JwtPayload } from "jsonwebtoken";
 
 export const createUserTokens = (user: Partial<IUser>) => {
@@ -33,10 +33,22 @@ export const createUserTokens = (user: Partial<IUser>) => {
 export const createNewAccessTokenWithRefreshToken = async (
   refreshToken: string
 ) => {
-  const verifiedRefreshToken = verifyToken(
-    refreshToken,
-    envVars.JWT_REFRESH_SECRET
-  ) as JwtPayload;
+  let verifiedRefreshToken: JwtPayload;
+
+  try {
+    verifiedRefreshToken = verifyToken(
+      refreshToken,
+      envVars.JWT_REFRESH_SECRET
+    ) as JwtPayload;
+  } catch (err) {
+    if (err instanceof TokenError) {
+      throw new AppError(
+        httpStatus.UNAUTHORIZED,
+        "Invalid or expired refresh token"
+      );
+    }
+    throw err;
+  }
 
   const isUserExist = await User.findOne({ email: verifiedRefreshToken.email });
 
