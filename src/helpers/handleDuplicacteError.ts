@@ -1,7 +1,7 @@
 import { StatusCodes } from "http-status-codes";
 import { TGenericErrorResponse } from "../interfaces/error.types";
 
-export const handleDuplicateError = (err: unknown): TGenericErrorResponse => {
+const handleDuplicateError = (err: unknown): TGenericErrorResponse => {
   if (err instanceof Error && typeof err.message === "string") {
     const matchedArray = err.message.match(/"([^"]*)"/);
     const field = matchedArray?.[1] || "Field";
@@ -16,3 +16,5 @@ export const handleDuplicateError = (err: unknown): TGenericErrorResponse => {
     message: "Duplicate value already exists",
   };
 };
+
+export default handleDuplicateError;
