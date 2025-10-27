@@ -2,16 +2,18 @@
 import { Request, Response } from "express";
 import { envVars } from "../config/env";
 import AppError from "../errorHelpers/AppError";
-import { handlerDuplicateError } from "../helpers/handleDuplicacteError";
-import { handleCastError } from "../helpers/handleCastError";
 import { TErrorSources } from "../interfaces/error.types";
-import { handleZodError } from "../helpers/handleZodError";
-import { handleValidationError } from "../helpers/handleValidationError";
+import handleDuplicateError from "../helpers/handleDuplicacteError";
+import handleCastError from "../helpers/handleCastError";
+import handleZodError from "../helpers/handleZodError";
+import handleValidationError from "../helpers/handleValidationError";
+import mongoose from "mongoose";
+import { ZodError } from "zod";
 
 export const globalErrorHandler = async (
   err: Error,
   req: Request,
-  res: Response,
+  res: Response
 ) => {
   if (envVars.NODE_ENV === "development") {
     console.log(err);
@@ -21,27 +23,43 @@ export const globalErrorHandler = async (
   let message = "Something Went Wrong!!";
   let errorSources: TErrorSources[] = [];
 
+  // type guard
+  const hasCodeProperty = (err: unknown): err is { code: number } => {
+    return (
+      typeof err === "object" &&
+      err !== null &&
+      "code" in err &&
+      typeof (err as { code?: unknown }).code === "number"
+    );
+  };
+
   //Duplicate error
-  if (err.code === 11000) {
-    const simplifiedError = handlerDuplicateError(err);
+  if (hasCodeProperty(err) && err.code === 11000) {
+    const simplifiedError = handleDuplicateError(err);
     statusCode = simplifiedError.statusCode;
     message = simplifiedError.message;
   }
   // Object ID error / Cast Error
-  else if (err.name === "CastError") {
+  else if (
+    err.name === "CastError" &&
+    err instanceof mongoose.Error.CastError
+  ) {
     const simplifiedError = handleCastError(err);
     statusCode = simplifiedError.statusCode;
     message = simplifiedError.message;
   }
   //   Zod validation Error
-  else if (err.name === "ZodError") {
+  else if (err.name === "ZodError" && err instanceof ZodError) {
     const simplifiedError = handleZodError(err);
     statusCode = simplifiedError.statusCode;
     message = simplifiedError.message;
     errorSources = simplifiedError.errorSources as TErrorSources[];
   }
   //Mongoose Validation Error
-  else if (err.name === "ValidationError") {
+  else if (
+    err.name === "ValidationError" &&
+    err instanceof mongoose.Error.ValidationError
+  ) {
     const simplifiedError = handleValidationError(err);
     statusCode = simplifiedError.statusCode;
     errorSources = simplifiedError.errorSources as TErrorSources[];
