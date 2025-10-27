@@ -13,6 +13,12 @@ export enum IsActive {
   BLOCKED = "BLOCKED",
 }
 
+export enum ApprovalStatus {
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+}
+
 export interface IUser {
   _id?: Types.ObjectId;
   name: string;
@@ -26,6 +32,8 @@ export interface IUser {
   isVerified?: boolean;
   role: Role;
   wallet?: Types.ObjectId;
+  commissionRate?: number;
+  approvalStatus?: ApprovalStatus;
   createdAt?: Date;
   updatedAt?: Date;
 }

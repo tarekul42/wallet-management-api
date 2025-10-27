@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import expressSession from "express-session";
 import cors from "cors";
-import { router } from "./routes";
+import router from "./routes";
 import passport from "passport";
 import "./config/passport";
 import { envVars } from "./config/env";
@@ -13,7 +13,7 @@ app.use(
     secret: envVars.EXPRESS_SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-  })
+  }),
 );
 app.use(passport.initialize());
 app.use(passport.session());
@@ -22,7 +22,7 @@ app.use(
   cors({
     origin: "http://localhost:5000",
     credentials: true,
-  })
+  }),
 );
 
 app.use("/api/v1", router);

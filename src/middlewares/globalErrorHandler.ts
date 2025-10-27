@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-console */
 import { Request, Response } from "express";
 import { envVars } from "../config/env";
@@ -10,9 +9,9 @@ import { handleZodError } from "../helpers/handleZodError";
 import { handleValidationError } from "../helpers/handleValidationError";
 
 export const globalErrorHandler = async (
-  err: any,
+  err: Error,
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   if (envVars.NODE_ENV === "development") {
     console.log(err);
@@ -34,7 +33,7 @@ export const globalErrorHandler = async (
     statusCode = simplifiedError.statusCode;
     message = simplifiedError.message;
   }
-//   Zod validation Error
+  //   Zod validation Error
   else if (err.name === "ZodError") {
     const simplifiedError = handleZodError(err);
     statusCode = simplifiedError.statusCode;

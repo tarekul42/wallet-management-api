@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import bcryptjs from "bcryptjs";
 import passport from "passport";
-import { User } from "../modules/user/user.model";
-import { IsActive } from "../modules/user/user.interface";
 import { Strategy as LocalStrategy } from "passport-local";
+import { User } from "../modules/user/user.model";
+import { IsActive, IUser } from "../modules/user/user.interface";
+import bcrypt from "bcryptjs";
 
 passport.use(
   new LocalStrategy(
@@ -11,64 +10,53 @@ passport.use(
       usernameField: "email",
       passwordField: "password",
     },
-    async (email: string, password: string, done) => {
+    async (email, password, done) => {
       try {
-        const isUserExist = await User.findOne({ email });
+        const user = await User.findOne({ email });
 
-        // if (!isUserExist) {
-        //     return done(null, false, { message: "User does not exist" })
-        // }
-
-        if (!isUserExist) {
-          return done("User does not exist");
+        if (!user) {
+          return done(null, false, { message: "User does not exists" });
         }
-
-        if (!isUserExist.isVerified) {
-          // throw new AppError(httpStatus.BAD_REQUEST, "User is not verified")
-          return done("User is not verified");
+        if (!user.isVerified) {
+          return done(null, false, { message: "Please verify your email" });
         }
-
         if (
-          isUserExist.isActive === IsActive.BLOCKED ||
-          isUserExist.isActive === IsActive.INACTIVE
+          user.isActive === IsActive.BLOCKED ||
+          user.isActive === IsActive.INACTIVE
         ) {
-          // throw new AppError(httpStatus.BAD_REQUEST, `User is ${isUserExist.isActive}`)
-          return done(`User is ${isUserExist.isActive}`);
-        }
-        if (isUserExist.isDeleted) {
-          // throw new AppError(httpStatus.BAD_REQUEST, "User is deleted")
-          return done("User is deleted");
-        }
-
-        if (!isUserExist.password) {
           return done(null, false, {
-            message:
-              "You have authenticated through Google. So if you want to login with credentials, then at first login with google and set a password for your Gmail and then you can login with email and password.",
+            message: `Your account is ${user.isActive}`,
+          });
+        }
+        if (user.isDeleted) {
+          return done(null, false, { message: "Your account is deleted" });
+        }
+        if (!user.password) {
+          return done(null, false, {
+            message: "Password not set, please reset your password",
           });
         }
 
-        const isPasswordMatched = await bcryptjs.compare(
-          password as string,
-          isUserExist.password as string
-        );
+        const isPasswordMatched = await bcrypt.compare(password, user.password);
 
         if (!isPasswordMatched) {
           return done(null, false, { message: "Password does not match" });
         }
 
-        return done(null, isUserExist);
+        return done(null, user);
       } catch (error) {
-        done(error);
+        return done(error);
       }
-    }
-  )
+    },
+  ),
 );
 
-passport.serializeUser((user: any, done: (err: any, id?: unknown) => void) => {
-  done(null, user._id);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+passport.serializeUser((user: any, done) => {
+  done(null, (user as IUser)._id);
 });
 
-passport.deserializeUser(async (id: string, done: any) => {
+passport.deserializeUser(async (id: string, done) => {
   try {
     const user = await User.findById(id);
     done(null, user);

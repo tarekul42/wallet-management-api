@@ -4,19 +4,19 @@ import {
   TGenericErrorResponse,
 } from "../interfaces/error.types";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export const handleValidationError = (
-  err: mongoose.Error.ValidationError
+  err: mongoose.Error.ValidationError,
 ): TGenericErrorResponse => {
   const errorSources: TErrorSources[] = [];
 
   const errors = Object.values(err.errors);
 
-  errors.forEach((errorObject: any) =>
-    errorSources.push({
-      path: errorObject.path,
-      message: errorObject.message,
-    })
+  errors.forEach(
+    (errorObject: mongoose.Error.ValidatorError | mongoose.Error.CastError) =>
+      errorSources.push({
+        path: errorObject.path,
+        message: errorObject.message,
+      }),
   );
 
   return {
