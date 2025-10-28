@@ -91,7 +91,7 @@ const sendMoney = async (
       throw new AppError(httpStatus.NOT_FOUND, "Sender not found.");
     }
 
-    const receiver = await User.findOne({ phone: receiverPhone }).session(
+    const receiver = await User.findOne({ phone: { $eq: receiverPhone } }).session(
       session,
     );
     if (!receiver) {
