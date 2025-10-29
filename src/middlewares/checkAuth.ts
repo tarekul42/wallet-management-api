@@ -75,20 +75,6 @@ export const checkAuth =
         throw new AppError(StatusCodes.BAD_REQUEST, "User is not verified");
       }
 
-      if (!verifiedToken) {
-        throw new AppError(
-          StatusCodes.FORBIDDEN,
-          "You are not authorized to view this route"
-        );
-      }
-
-      if (!authRoles.includes(verifiedToken.role)) {
-        throw new AppError(
-          StatusCodes.FORBIDDEN,
-          "You are not permitted to access this route"
-        );
-      }
-
       req.user = verifiedToken;
       next();
     } catch (error) {

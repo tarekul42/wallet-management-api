@@ -6,7 +6,7 @@ export interface AuthTokens {
   refreshToken?: string;
 }
 
-export const setAuthCookie = (res: Response, tokenInfo: AuthTokens) => {
+const setAuthCookie = (res: Response, tokenInfo: AuthTokens) => {
   const cookieOptions = {
     httpOnly: true,
     secure: envVars.NODE_ENV === "production",
@@ -22,3 +22,5 @@ export const setAuthCookie = (res: Response, tokenInfo: AuthTokens) => {
     res.cookie("refreshToken", tokenInfo.refreshToken, cookieOptions);
   }
 };
+
+export default setAuthCookie;

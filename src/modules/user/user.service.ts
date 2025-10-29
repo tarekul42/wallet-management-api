@@ -5,6 +5,7 @@ import { StatusCodes } from "http-status-codes";
 import bcrypt from "bcryptjs";
 import { envVars } from "../../config/env";
 import { Wallet } from "../wallet/wallet.model";
+import createVerificationToken from "../../utils/createVerificationToken";
 
 const createUser = async (payload: Partial<IUser>) => {
   const isExists = await User.findOne({ email: payload.email });
@@ -18,7 +19,7 @@ const createUser = async (payload: Partial<IUser>) => {
 
   const hashedPassword = await bcrypt.hash(
     payload.password as string,
-    Number(envVars.BCRYPT_SALT_ROUND),
+    envVars.BCRYPT_SALT_ROUND,
   );
 
   const wallet = await Wallet.create({ balance: 50 });
@@ -27,9 +28,13 @@ const createUser = async (payload: Partial<IUser>) => {
     ...payload,
     password: hashedPassword,
     wallet: wallet._id,
+    isVerified: false,
   };
 
   const result = await User.create(userPayload);
+
+  const verificationToken = await createVerificationToken(result._id);
+
   const user = await User.findById(result._id).select("-password");
   return user;
 };

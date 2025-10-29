@@ -5,6 +5,7 @@ import { generateToken } from "../../utils/jwt";
 import { IsActive, IUser } from "../user/user.interface";
 import { User } from "../user/user.model";
 import bcrypt from "bcryptjs";
+import { createNewAccessTokenWithRefreshToken } from "../../utils/userTokens";
 
 const credentialsLogin = async (payload: Partial<IUser>) => {
   const user = await User.findOne({ email: payload.email }).select("+password"); // password was default excluded.
@@ -54,6 +55,14 @@ const credentialsLogin = async (payload: Partial<IUser>) => {
   };
 };
 
-export const AuthService = {
+const getNewAccessToken = async (refreshToken: string) => {
+  const newAccessToken =
+    await createNewAccessTokenWithRefreshToken(refreshToken);
+
+  return { accessToken: newAccessToken };
+};
+
+export const AuthServices = {
   credentialsLogin,
+  getNewAccessToken,
 };
