@@ -1,31 +1,22 @@
 import httpStatus from "http-status-codes";
-import { NextFunction, Request, Response } from "express";
-import AppError from "../../errorHelpers/AppError";
-import { sendResponse } from "../../utils/sendResponse";
-import { getMyWallet } from "./wallet.service";
-
+import { Request, Response } from "express";
 import { JwtPayload } from "jsonwebtoken";
+import { sendResponse } from "../../utils/sendResponse";
+import { catchAsync } from "../../utils/catchAsync";
+import { WalletServices } from "./wallet.service";
 
-// Wallet Controller
-export const getWallet = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    if (!req.user) {
-      throw new AppError(httpStatus.BAD_REQUEST, "User does not exists");
-    }
+const getMyWallet = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user as JwtPayload;
+  const result = await WalletServices.getMyWallet(user.userId);
 
-    const userId = (req.user as JwtPayload).userId;
-    const wallet = await getMyWallet(userId);
-    sendResponse(res, {
-      statusCode: 200,
-      success: true,
-      message: "Wallet fetched successfully",
-      data: wallet,
-    });
-  } catch (error) {
-    next(error);
-  }
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Wallet fetched successfully",
+    data: result,
+  });
+});
+
+export const WalletControllers = {
+  getMyWallet,
 };

@@ -1,59 +1,80 @@
-import AppError from "../../errorHelpers/AppError";
-import { IUser } from "./user.interface";
-import { User } from "./user.model";
 import { StatusCodes } from "http-status-codes";
-import bcrypt from "bcryptjs";
-import { envVars } from "../../config/env";
-import { Wallet } from "../wallet/wallet.model";
+import AppError from "../../errorHelpers/AppError";
+import { IsActive, IUser, Role } from "./user.interface";
+import { User } from "./user.model";
 
-const createUser = async (payload: Partial<IUser>) => {
-  const isExists = await User.findOne({ email: payload.email });
+// Service to get a user's own profile
+const getMyProfile = async (userId: string) => {
+  const result = await User.findById(userId);
+  if (!result) {
+    throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+  }
+  return result;
+};
 
-  if (isExists) {
+// Service to update a user's own profile
+const updateMyProfile = async (userId: string, payload: Partial<IUser>) => {
+  // Users should not be able to change their role, status, etc.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { role, isActive, isVerified, isDeleted, ...updateData } = payload;
+  const result = await User.findByIdAndUpdate(userId, updateData, {
+    new: true,
+    runValidators: true,
+  });
+  if (!result) {
+    throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+  }
+  return result;
+};
+
+// Service for an admin to get all users
+const getAllUsers = async () => {
+  const result = await User.find({});
+  return result;
+};
+
+// Service for an admin to block a user
+const blockUser = async (currentUserId: string, targetUserId: string) => {
+  // Check if target user exists
+  const targetUser = await User.findById(targetUserId);
+  if (!targetUser) {
+    throw new AppError(StatusCodes.NOT_FOUND, "User to block not found");
+  }
+
+  // Prevent an admin from blocking themselves
+  if (currentUserId === targetUserId) {
+    throw new AppError(StatusCodes.BAD_REQUEST, "You cannot block yourself.");
+  }
+
+  // Prevent an admin from blocking another admin
+  if (targetUser.role === Role.ADMIN) {
     throw new AppError(
-      StatusCodes.CONFLICT,
-      "User already exists, please try to login"
+      StatusCodes.FORBIDDEN,
+      "Admins cannot block other admins.",
     );
   }
 
-  const hashedPassword = await bcrypt.hash(
-    payload.password as string,
-    envVars.BCRYPT_SALT_ROUND
-  );
-
-  const wallet = await Wallet.create({ balance: 50 });
-
-  const userPayload: Partial<IUser> = {
-    ...payload,
-    password: hashedPassword,
-    wallet: wallet._id,
-    isVerified: true, // TODO: it will be changed after setting up the otp to verify a user
-  };
-
-  const result = await User.create(userPayload);
-
-  const user = await User.findById(result._id).select("-password");
-  return user;
+  targetUser.isActive = IsActive.BLOCKED;
+  await targetUser.save();
+  return targetUser;
 };
 
-const getMe = async (userId: string) => {
-  const result = await User.findById(userId);
-  return result;
+// Service for an admin to unblock a user
+const unblockUser = async (targetUserId: string) => {
+  const targetUser = await User.findById(targetUserId);
+  if (!targetUser) {
+    throw new AppError(StatusCodes.NOT_FOUND, "User to unblock not found");
+  }
+
+  targetUser.isActive = IsActive.ACTIVE;
+  await targetUser.save();
+  return targetUser;
 };
 
-const updateUser = async (userId: string, payload: Partial<IUser>) => {
-  const result = await User.findByIdAndUpdate(userId, payload);
-  return result;
-};
-
-const deleteUser = async (userId: string) => {
-  const result = await User.findByIdAndDelete(userId);
-  return result;
-};
-
-export const UserService = {
-  createUser,
-  getMe,
-  updateUser,
-  deleteUser,
+export const UserServices = {
+  getMyProfile,
+  updateMyProfile,
+  getAllUsers,
+  blockUser,
+  unblockUser,
 };

@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
-import { Request, Response } from "express";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { NextFunction, Request, Response } from "express";
 import { envVars } from "../config/env";
 import AppError from "../errorHelpers/AppError";
 import { TErrorSources } from "../interfaces/error.types";
@@ -10,10 +11,11 @@ import handleValidationError from "../helpers/handleValidationError";
 import mongoose from "mongoose";
 import { ZodError } from "zod";
 
-export const globalErrorHandler = async (
+export const globalErrorHandler = (
   err: Error,
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction,
 ) => {
   if (envVars.NODE_ENV === "development") {
     console.log(err);

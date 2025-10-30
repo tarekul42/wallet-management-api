@@ -1,23 +1,29 @@
 import { Router } from "express";
-import {
-  getProfile,
-  updateProfile,
-  getUsers,
-  blockUserController,
-  unblockUserController,
-} from "./user.controller";
-import { checkAuth } from "../../middlewares/checkAuth";
+import { UserControllers } from "./user.controller";
 import { Role } from "./user.interface";
+import checkAuth from "../../middlewares/checkAuth";
 
 const router = Router();
 
 // Authenticated users can get and update their own profile
-router.get("/me", checkAuth(...Object.values(Role)), getProfile);
-router.patch("/me", checkAuth(...Object.values(Role)), updateProfile);
+router.get(
+  "/me",
+  checkAuth(Role.USER, Role.ADMIN, Role.AGENT),
+  UserControllers.getMyProfile,
+);
+router.patch(
+  "/me",
+  checkAuth(Role.USER, Role.ADMIN, Role.AGENT),
+  UserControllers.updateMyProfile,
+);
 
 // Admin endpoints
-router.get("/", checkAuth(Role.ADMIN, Role.SUPER_ADMIN), getUsers);
-router.patch("/:id/block", checkAuth(Role.ADMIN, Role.SUPER_ADMIN), blockUserController);
-router.patch("/:id/unblock", checkAuth(Role.ADMIN, Role.SUPER_ADMIN), unblockUserController);
+router.get("/", checkAuth(Role.ADMIN), UserControllers.getAllUsers);
+router.patch("/:id/block", checkAuth(Role.ADMIN), UserControllers.blockUser);
+router.patch(
+  "/:id/unblock",
+  checkAuth(Role.ADMIN),
+  UserControllers.unblockUser,
+);
 
 export const UserRoutes = router;

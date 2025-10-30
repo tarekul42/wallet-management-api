@@ -1,7 +1,7 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { User } from "../modules/user/user.model";
-import { IsActive, IUser } from "../modules/user/user.interface";
+import { IsActive } from "../modules/user/user.interface";
 import bcrypt from "bcryptjs";
 
 passport.use(
@@ -50,17 +50,3 @@ passport.use(
     },
   ),
 );
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-passport.serializeUser((user: any, done) => {
-  done(null, (user as IUser)._id);
-});
-
-passport.deserializeUser(async (id: string, done) => {
-  try {
-    const user = await User.findById(id);
-    done(null, user);
-  } catch (error) {
-    done(error);
-  }
-});

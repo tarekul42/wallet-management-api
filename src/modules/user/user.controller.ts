@@ -1,149 +1,69 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import { JwtPayload } from "jsonwebtoken";
-import {
+import httpStatus from "http-status-codes";
+import { UserServices } from "./user.service";
+import { sendResponse } from "../../utils/sendResponse";
+import { catchAsync } from "../../utils/catchAsync";
+
+const getMyProfile = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user as JwtPayload;
+  const result = await UserServices.getMyProfile(user.userId);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Profile fetched successfully",
+    data: result,
+  });
+});
+
+const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user as JwtPayload;
+  const result = await UserServices.updateMyProfile(user.userId, req.body);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Profile updated successfully",
+    data: result,
+  });
+});
+
+const getAllUsers = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserServices.getAllUsers();
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Users fetched successfully",
+    data: result,
+  });
+});
+
+const blockUser = catchAsync(async (req: Request, res: Response) => {
+  const currentUser = req.user as JwtPayload;
+  const targetUserId = req.params.id;
+  const result = await UserServices.blockUser(currentUser.userId, targetUserId);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "User blocked successfully",
+    data: result,
+  });
+});
+
+const unblockUser = catchAsync(async (req: Request, res: Response) => {
+  const targetUserId = req.params.id;
+  const result = await UserServices.unblockUser(targetUserId);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "User unblocked successfully",
+    data: result,
+  });
+});
+
+export const UserControllers = {
   getMyProfile,
   updateMyProfile,
   getAllUsers,
   blockUser,
   unblockUser,
-} from "./user.service";
-import { sendResponse } from "../../utils/sendResponse";
-import { User } from "./user.model";
-import { Role } from "./user.interface";
-
-// User Controller
-export const getProfile = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const userId = (req.user as JwtPayload).userId;
-    const user = await getMyProfile(userId);
-    sendResponse(res, {
-      statusCode: 200,
-      success: true,
-      message: "Profile fetched successfully",
-      data: user,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const updateProfile = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const userId = (req.user as JwtPayload).userId;
-    const user = await updateMyProfile(userId, req.body);
-    sendResponse(res, {
-      statusCode: 200,
-      success: true,
-      message: "Profile updated successfully",
-      data: user,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const getUsers = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const users = await getAllUsers();
-    sendResponse(res, {
-      statusCode: 200,
-      success: true,
-      message: "Users fetched successfully",
-      data: users,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const blockUserController = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const currentUser = req.user as JwtPayload;
-    const targetUser = await User.findById(req.params.id);
-    if (!targetUser) throw new Error("User not found");
-
-    // Prevent self-block
-    if (currentUser.userId === req.params.id) {
-      return res
-        .status(403)
-        .json({ success: false, message: "Admins cannot block themselves." });
-    }
-
-    // Only SUPER_ADMIN can block/unblock ADMIN or SUPER_ADMIN
-    if (
-      (targetUser.role === Role.ADMIN || targetUser.role === Role.SUPER_ADMIN) &&
-      currentUser.role !== Role.SUPER_ADMIN
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: "Only SUPER_ADMIN can block/unblock ADMIN or SUPER_ADMIN.",
-      });
-    }
-
-    const user = await blockUser(req.params.id);
-    sendResponse(res, {
-      statusCode: 200,
-      success: true,
-      message: "User blocked successfully",
-      data: user,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const unblockUserController = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const currentUser = req.user as JwtPayload;
-    const targetUser = await User.findById(req.params.id);
-    if (!targetUser) throw new Error("User not found");
-
-    // Prevent self-unblock
-    if (currentUser.userId === req.params.id) {
-      return res
-        .status(403)
-        .json({ success: false, message: "Admins cannot unblock themselves." });
-    }
-
-    // Only SUPER_ADMIN can unblock ADMIN or SUPER_ADMIN
-    if (
-      (targetUser.role === Role.ADMIN || targetUser.role === Role.SUPER_ADMIN) &&
-      currentUser.role !== Role.SUPER_ADMIN
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: "Only SUPER_ADMIN can block/unblock ADMIN or SUPER_ADMIN.",
-      });
-    }
-
-    const user = await unblockUser(req.params.id);
-    sendResponse(res, {
-      statusCode: 200,
-      success: true,
-      message: "User unblocked successfully",
-      data: user,
-    });
-  } catch (error) {
-    next(error);
-  }
 };
