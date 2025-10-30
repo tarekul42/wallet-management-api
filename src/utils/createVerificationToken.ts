@@ -1,12 +1,15 @@
 import { Types } from "mongoose";
-import cryptoJs from "crypto-js";
+import crypto from "crypto";
 import dayjs from "dayjs";
 import VerificationToken from "../modules/verificationToken/verificationToken.model";
 
 const createVerificationToken = async (userId: Types.ObjectId) => {
-  const rawToken = cryptoJs.lib.WordArray.random(32).toString(CryptoJS.enc.Hex);
+  const rawToken = crypto.randomBytes(32).toString("hex");
 
-  const hashedToken = cryptoJs.SHA256(rawToken).toString(CryptoJS.enc.Hex);
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(rawToken)
+    .digest("hex");
 
   const expiresAt = dayjs().add(1, "hour").toDate();
 
@@ -16,7 +19,7 @@ const createVerificationToken = async (userId: Types.ObjectId) => {
     expiresAt,
   });
 
-  return userId;
+  return rawToken;
 };
 
 export default createVerificationToken;
