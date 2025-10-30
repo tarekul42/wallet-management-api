@@ -1,9 +1,9 @@
 import express from "express";
-import { checkAuth } from "../../middlewares/checkAuth";
 import { Role } from "../user/user.interface";
 import { TransactionControllers } from "./transaction.controller";
 import { z } from "zod";
 import validateRequest from "../../middlewares/validateRequest";
+import checkAuth from "../../middlewares/checkAuth";
 
 const router = express.Router();
 

@@ -34,13 +34,13 @@ const credentialsLogin = async (payload: Partial<IUser>) => {
   if (user.isVerified === false) {
     throw new AppError(
       StatusCodes.FORBIDDEN,
-      "User is not verified yet. please verify to login.",
+      "User is not verified yet. please verify to login."
     );
   }
 
   const isPasswordValid = await bcrypt.compare(
     payload.password as string,
-    user.password,
+    user.password
   );
 
   if (!isPasswordValid) {
@@ -55,7 +55,7 @@ const credentialsLogin = async (payload: Partial<IUser>) => {
   const token = generateToken(
     tokenPayload,
     envVars.JWT_ACCESS_SECRET,
-    envVars.JWT_ACCESS_EXPIRES,
+    envVars.JWT_ACCESS_EXPIRES
   );
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -74,7 +74,7 @@ const registerUser = async (payload: IUser) => {
   if (user) {
     throw new AppError(
       StatusCodes.BAD_REQUEST,
-      "User already exists with this email.",
+      "User already exists with this email."
     );
   }
 
@@ -82,7 +82,7 @@ const registerUser = async (payload: IUser) => {
   if (payload.role !== "USER" && payload.role !== "AGENT") {
     throw new AppError(
       StatusCodes.BAD_REQUEST,
-      "Registration is only available for users and agents.",
+      "Registration is only available for users and agents."
     );
   }
 
@@ -102,7 +102,7 @@ const registerUser = async (payload: IUser) => {
     if (!newUser) {
       throw new AppError(
         StatusCodes.INTERNAL_SERVER_ERROR,
-        "User creation failed during registration.",
+        "User creation failed during registration."
       );
     }
 
@@ -115,7 +115,7 @@ const registerUser = async (payload: IUser) => {
           balance: 50,
         },
       ],
-      { session },
+      { session }
     );
 
     const verificationToken = await createVerificationToken(newUser._id);
@@ -131,9 +131,10 @@ const registerUser = async (payload: IUser) => {
     };
   } catch (error) {
     await session.abortTransaction();
+    const errMsg = error instanceof Error ? error.message : String(error);
     throw new AppError(
       StatusCodes.INTERNAL_SERVER_ERROR,
-      `Failed to register user. Please try again later. ${error.message}`,
+      `Failed to register user. Please try again later. ${errMsg}`
     );
   } finally {
     session.endSession();
@@ -153,7 +154,7 @@ const verifyEmail = async (token: string) => {
   if (!verificationToken) {
     throw new AppError(
       StatusCodes.BAD_REQUEST,
-      "Token is invalid or has expired.",
+      "Token is invalid or has expired."
     );
   }
 
@@ -167,7 +168,7 @@ const verifyEmail = async (token: string) => {
     await VerificationToken.findByIdAndDelete(verificationToken._id);
     throw new AppError(
       StatusCodes.BAD_REQUEST,
-      "This account has already been verified.",
+      "This account has already been verified."
     );
   }
 
@@ -188,8 +189,9 @@ const logoutUser = () => {
 };
 
 const getNewAccessToken = async (refreshToken: string) => {
-  const newAccessToken =
-    await createNewAccessTokenWithRefreshToken(refreshToken);
+  const newAccessToken = await createNewAccessTokenWithRefreshToken(
+    refreshToken
+  );
 
   return { accessToken: newAccessToken };
 };
