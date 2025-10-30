@@ -5,10 +5,10 @@ import httpStatus from "http-status-codes";
 import passport from "passport";
 import AppError from "../../errorHelpers/AppError";
 import { catchAsync } from "../../utils/catchAsync";
-import { sendResponse } from "../../utils/sendResponse";
 import { createUserTokens } from "../../utils/userTokens";
 import setAuthCookie from "../../utils/setCookie";
 import { AuthServices } from "./auth.service";
+import { sendResponse } from "../../utils/sendResponse";
 
 const credentialsLogin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {

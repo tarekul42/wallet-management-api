@@ -2,8 +2,8 @@ import express from "express";
 import { checkAuth } from "../../middlewares/checkAuth";
 import { Role } from "../user/user.interface";
 import { TransactionControllers } from "./transaction.controller";
-import { validateRequest } from "../../middlewares/validateRequest";
 import { z } from "zod";
+import validateRequest from "../../middlewares/validateRequest";
 
 const router = express.Router();
 
@@ -17,7 +17,7 @@ router.post(
   "/add-money",
   checkAuth(Role.USER),
   validateRequest(addMoneyValidationSchema),
-  TransactionControllers.addMoneyTopUp,
+  TransactionControllers.addMoneyTopUp
 );
 
 const sendMoneyValidationSchema = z.object({
@@ -31,7 +31,7 @@ router.post(
   "/send-money",
   checkAuth(Role.USER),
   validateRequest(sendMoneyValidationSchema),
-  TransactionControllers.sendMoney,
+  TransactionControllers.sendMoney
 );
 
 const withdrawMoneyValidationSchema = z.object({
@@ -44,13 +44,13 @@ router.post(
   "/withdraw-money",
   checkAuth(Role.USER),
   validateRequest(withdrawMoneyValidationSchema),
-  TransactionControllers.withdrawMoney,
+  TransactionControllers.withdrawMoney
 );
 
 router.get(
   "/history",
   checkAuth(Role.USER),
-  TransactionControllers.getTransactionHistory,
+  TransactionControllers.getTransactionHistory
 );
 
 export const TransactionRoutes = router;

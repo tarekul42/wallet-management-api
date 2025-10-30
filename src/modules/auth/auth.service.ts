@@ -26,9 +26,16 @@ const credentialsLogin = async (payload: Partial<IUser>) => {
     throw new AppError(StatusCodes.FORBIDDEN, "User is deleted");
   }
 
+  if (user.isVerified === false) {
+    throw new AppError(
+      StatusCodes.FORBIDDEN,
+      "User is not verified yet. please verify to login."
+    );
+  }
+
   const isPasswordValid = await bcrypt.compare(
     payload.password as string,
-    user.password,
+    user.password
   );
 
   if (!isPasswordValid) {
@@ -43,7 +50,7 @@ const credentialsLogin = async (payload: Partial<IUser>) => {
   const token = generateToken(
     tokenPayload,
     envVars.JWT_ACCESS_SECRET,
-    envVars.JWT_ACCESS_EXPIRES,
+    envVars.JWT_ACCESS_EXPIRES
   );
 
   const userData = user.toObject() as Partial<IUser>;
@@ -56,8 +63,9 @@ const credentialsLogin = async (payload: Partial<IUser>) => {
 };
 
 const getNewAccessToken = async (refreshToken: string) => {
-  const newAccessToken =
-    await createNewAccessTokenWithRefreshToken(refreshToken);
+  const newAccessToken = await createNewAccessTokenWithRefreshToken(
+    refreshToken
+  );
 
   return { accessToken: newAccessToken };
 };

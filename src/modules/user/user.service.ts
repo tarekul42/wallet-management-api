@@ -5,7 +5,6 @@ import { StatusCodes } from "http-status-codes";
 import bcrypt from "bcryptjs";
 import { envVars } from "../../config/env";
 import { Wallet } from "../wallet/wallet.model";
-import createVerificationToken from "../../utils/createVerificationToken";
 
 const createUser = async (payload: Partial<IUser>) => {
   const isExists = await User.findOne({ email: payload.email });
@@ -13,13 +12,13 @@ const createUser = async (payload: Partial<IUser>) => {
   if (isExists) {
     throw new AppError(
       StatusCodes.CONFLICT,
-      "User already exists, please try to login",
+      "User already exists, please try to login"
     );
   }
 
   const hashedPassword = await bcrypt.hash(
     payload.password as string,
-    envVars.BCRYPT_SALT_ROUND,
+    envVars.BCRYPT_SALT_ROUND
   );
 
   const wallet = await Wallet.create({ balance: 50 });
@@ -28,12 +27,10 @@ const createUser = async (payload: Partial<IUser>) => {
     ...payload,
     password: hashedPassword,
     wallet: wallet._id,
-    isVerified: false,
+    isVerified: true, // TODO: it will be changed after setting up the otp to verify a user
   };
 
   const result = await User.create(userPayload);
-
-  const verificationToken = await createVerificationToken(result._id);
 
   const user = await User.findById(result._id).select("-password");
   return user;
