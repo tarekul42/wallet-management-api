@@ -37,7 +37,7 @@ const loadEnvVariables = (): EnvConfig => {
     }
   });
 
-  const port = Number(process.env.Port);
+  const port = Number(process.env.PORT);
   if (isNaN(port)) {
     throw new Error("Invalid PORT environment variable");
   }
