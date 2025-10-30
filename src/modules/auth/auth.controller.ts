@@ -93,7 +93,7 @@ const logoutUser = catchAsync(async (req: Request, res: Response) => {
     );
   }
 
-  const result = await AuthServices.logoutUser();
+  const result = AuthServices.logoutUser();
 
   // Clear cookies
   res.clearCookie("accessToken", { httpOnly: true, secure: false }); // secure should be true in production

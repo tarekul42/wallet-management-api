@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 import { envVars } from "../../config/env";
 import AppError from "../../errorHelpers/AppError";
 import { generateToken } from "../../utils/jwt";
-import { IsActive, IUser } from "../user/user.interface";
+import { ApprovalStatus, IsActive, IUser } from "../user/user.interface";
 import { User } from "../user/user.model";
 import { Wallet } from "../wallet/wallet.model";
 import { createNewAccessTokenWithRefreshToken } from "../../utils/userTokens";
@@ -67,6 +67,13 @@ const credentialsLogin = async (payload: Partial<IUser>) => {
   };
 };
 
+const getNewAccessToken = async (refreshToken: string) => {
+  const newAccessToken =
+    await createNewAccessTokenWithRefreshToken(refreshToken);
+
+  return { accessToken: newAccessToken };
+};
+
 const registerUser = async (payload: IUser) => {
   // check if user exists
   const user = await User.findOne({ email: payload.email });
@@ -86,17 +93,23 @@ const registerUser = async (payload: IUser) => {
     );
   }
 
+  // Set default values for agents
+  if (payload.role === "AGENT") {
+    payload.approvalStatus = ApprovalStatus.PENDING;
+    payload.commissionRate = 0.02;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { confirmPassword, ...userData } = payload;
+
   const session = await mongoose.startSession();
   let result;
 
   try {
     session.startTransaction();
 
-    // Hash password before saving
-    payload.password = await bcrypt.hash(payload.password, 12);
-
     // Create the new user
-    const newUserArr = await User.create([payload], { session });
+    const newUserArr = await User.create([userData], { session });
     const newUser = newUserArr[0];
 
     if (!newUser) {
@@ -106,8 +119,6 @@ const registerUser = async (payload: IUser) => {
       );
     }
 
-    // Automatically create a wallet for the new user or agent
-    // with an initial balance of ৳50 as per requirements.
     await Wallet.create(
       [
         {
@@ -121,9 +132,6 @@ const registerUser = async (payload: IUser) => {
     const verificationToken = await createVerificationToken(newUser._id);
 
     await session.commitTransaction();
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...userData } = newUser.toObject();
 
     result = {
       ...userData,
@@ -181,18 +189,7 @@ const verifyEmail = async (token: string) => {
 };
 
 const logoutUser = () => {
-  // For a stateless JWT architecture, logout is primarily a client-side responsibility.
-  // The client must securely discard the JWT and refresh token.
-  // This backend endpoint serves to acknowledge the logout request and instruct the client.
-  // The controller handling this request will clear the cookies.
   return { message: "Logged out successfully." };
-};
-
-const getNewAccessToken = async (refreshToken: string) => {
-  const newAccessToken =
-    await createNewAccessTokenWithRefreshToken(refreshToken);
-
-  return { accessToken: newAccessToken };
 };
 
 export const AuthServices = {

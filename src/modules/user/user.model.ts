@@ -50,7 +50,7 @@ const userSchema = new Schema<IUser>(
     },
     isVerified: {
       type: Boolean,
-      default: false,
+      default: true, // TODO: will be changed latter
     },
     wallet: {
       type: Schema.Types.ObjectId,

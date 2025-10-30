@@ -47,11 +47,34 @@ const registerUserValidationSchema = z
       .enum(Object.values(IsActive) as [string, ...string[]])
       .optional(),
     confirmPassword: z.string().optional(),
+    commissionRate: z.undefined({
+      invalid_type_error:
+        "commissionRate cannot be provided during registration.",
+    }),
+    approvalStatus: z.undefined({
+      invalid_type_error:
+        "approvalStatus cannot be provided during registration.",
+    }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Password and confirm password must match",
     path: ["confirmPassword"],
   });
+
+const loginUserValidationSchema = z.object({
+  email: z
+    .string({
+      required_error: "Email is required",
+      invalid_type_error: "Email must be a string",
+    })
+    .email({ message: "Invalid email address format." }),
+  password: z.string({
+    required_error: "Password is required",
+    invalid_type_error: "Password must be a string",
+  }),
+});
+
 export const AuthValidations = {
   registerUserValidationSchema,
+  loginUserValidationSchema,
 };
