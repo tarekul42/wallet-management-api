@@ -60,10 +60,25 @@ const unblockUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const agentApprovalByAdmin = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.params.id;
+  const { approvalStatus } = req.body;
+  const result = await UserServices.agentApprovalByAdmin(userId, {
+    approvalStatus,
+  });
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Agent approved successfully",
+    data: result,
+  });
+});
+
 export const UserControllers = {
   getMyProfile,
   updateMyProfile,
   getAllUsers,
   blockUser,
   unblockUser,
+  agentApprovalByAdmin,
 };

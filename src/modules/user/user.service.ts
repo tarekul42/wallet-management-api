@@ -50,7 +50,7 @@ const blockUser = async (currentUserId: string, targetUserId: string) => {
   if (targetUser.role === Role.ADMIN) {
     throw new AppError(
       StatusCodes.FORBIDDEN,
-      "Admins cannot block other admins.",
+      "Admins cannot block other admins."
     );
   }
 
@@ -71,10 +71,35 @@ const unblockUser = async (targetUserId: string) => {
   return targetUser;
 };
 
+const agentApprovalByAdmin = async (
+  userId: string,
+  payload: { approvalStatus: string }
+) => {
+  const agent = await User.findById(userId);
+
+  if (!agent) {
+    throw new AppError(StatusCodes.NOT_FOUND, "Agent not found");
+  }
+
+  if (agent.role !== Role.AGENT) {
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      "This user is not an agent. You can only approve agents."
+    );
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  agent.approvalStatus = payload.approvalStatus as any;
+  await agent.save();
+
+  return agent;
+};
+
 export const UserServices = {
   getMyProfile,
   updateMyProfile,
   getAllUsers,
   blockUser,
   unblockUser,
+  agentApprovalByAdmin,
 };

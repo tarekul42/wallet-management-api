@@ -2,6 +2,8 @@ import { Router } from "express";
 import { UserControllers } from "./user.controller";
 import { Role } from "./user.interface";
 import checkAuth from "../../middlewares/checkAuth";
+import { agentApprovalZodSchema } from "./user.validation";
+import validateRequest from "../../middlewares/validateRequest";
 
 const router = Router();
 
@@ -24,6 +26,12 @@ router.patch(
   "/:id/unblock",
   checkAuth(Role.ADMIN),
   UserControllers.unblockUser,
+);
+router.patch(
+  "/:id/approval",
+  checkAuth(Role.ADMIN),
+  validateRequest(agentApprovalZodSchema),
+  UserControllers.agentApprovalByAdmin,
 );
 
 export const UserRoutes = router;
