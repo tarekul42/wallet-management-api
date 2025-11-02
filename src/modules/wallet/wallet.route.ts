@@ -7,8 +7,32 @@ const router = Router();
 
 router.get(
   "/me",
-  checkAuth(Role.USER, Role.AGENT),
+  checkAuth(Role.USER, Role.AGENT, Role.SUPER_ADMIN),
   WalletControllers.getMyWallet,
+);
+
+router.get(
+  "/",
+  checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
+  WalletControllers.getAllWallets,
+);
+
+router.get(
+  "/:id",
+  checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
+  WalletControllers.getSingleWallet,
+);
+
+router.patch(
+  "/:id/block",
+  checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
+  WalletControllers.blockWallet,
+);
+
+router.patch(
+  "/:id/unblock",
+  checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
+  WalletControllers.unblockWallet,
 );
 
 export const WalletRoutes = router;

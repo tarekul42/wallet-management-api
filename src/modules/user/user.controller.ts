@@ -62,14 +62,36 @@ const unblockUser = catchAsync(async (req: Request, res: Response) => {
 
 const agentApprovalByAdmin = catchAsync(async (req: Request, res: Response) => {
   const userId = req.params.id;
-  const { approvalStatus } = req.body;
+  const { approvalStatus, commissionRate } = req.body;
   const result = await UserServices.agentApprovalByAdmin(userId, {
     approvalStatus,
+    commissionRate,
   });
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "Agent approved successfully",
+    data: result,
+  });
+});
+
+const updatePassword = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user as JwtPayload;
+  const result = await UserServices.updatePassword(user.userId, req.body);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Password updated successfully",
+    data: result,
+  });
+});
+
+const createAdmin = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserServices.createAdmin(req.body);
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: "Admin created successfully",
     data: result,
   });
 });
@@ -81,4 +103,6 @@ export const UserControllers = {
   blockUser,
   unblockUser,
   agentApprovalByAdmin,
+  updatePassword,
+  createAdmin,
 };

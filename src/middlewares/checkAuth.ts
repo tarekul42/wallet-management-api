@@ -24,22 +24,8 @@ const checkAuth = (...authRoles: string[]) =>
       envVars.JWT_ACCESS_SECRET,
     ) as JwtPayload;
 
-    if (!verifiedToken) {
-      throw new AppError(
-        StatusCodes.FORBIDDEN,
-        "You are not authorized to view this route",
-      );
-    }
-
-    if (!verifiedToken?.userId || !verifiedToken?.role) {
-      throw new AppError(StatusCodes.FORBIDDEN, "Invalid token payload");
-    }
-
-    if (authRoles.length > 0 && !authRoles.includes(verifiedToken.role)) {
-      throw new AppError(
-        StatusCodes.FORBIDDEN,
-        "You are not permitted to access this route",
-      );
+    if (!verifiedToken || !verifiedToken.userId) {
+      throw new AppError(StatusCodes.UNAUTHORIZED, "Invalid or expired token");
     }
 
     const user = await User.findById(verifiedToken.userId);
@@ -47,26 +33,36 @@ const checkAuth = (...authRoles: string[]) =>
     if (!user) {
       throw new AppError(
         StatusCodes.UNAUTHORIZED,
-        "User does not exist. Please login again",
-      );
-    }
-
-    if (
-      user.isActive !== undefined &&
-      [IsActive.BLOCKED, IsActive.INACTIVE].includes(user.isActive)
-    ) {
-      throw new AppError(
-        StatusCodes.UNAUTHORIZED,
-        `User is ${user.isActive.toLowerCase()}`,
+        "User not found. Please login again",
       );
     }
 
     if (user.isDeleted) {
-      throw new AppError(StatusCodes.UNAUTHORIZED, "User is deleted");
+      throw new AppError(
+        StatusCodes.UNAUTHORIZED,
+        "This account has been deleted.",
+      );
+    }
+
+    if (user.isActive === IsActive.BLOCKED) {
+      throw new AppError(
+        StatusCodes.FORBIDDEN,
+        "This account has been blocked.",
+      );
     }
 
     if (!user.isVerified) {
-      throw new AppError(StatusCodes.UNAUTHORIZED, "User is not verified");
+      throw new AppError(
+        StatusCodes.UNAUTHORIZED,
+        "Your account is not verified.",
+      );
+    }
+
+    if (authRoles.length > 0 && !authRoles.includes(user.role)) {
+      throw new AppError(
+        StatusCodes.FORBIDDEN,
+        "You are not authorized to access this route.",
+      );
     }
 
     req.user = verifiedToken;

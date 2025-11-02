@@ -18,6 +18,7 @@ const userSchema = new Schema<IUser>(
     password: {
       type: String,
       required: [true, "Password is required"],
+      select: false,
     },
     phone: {
       type: String,
@@ -59,9 +60,6 @@ const userSchema = new Schema<IUser>(
     commissionRate: {
       type: Number,
       default: null,
-      required: function () {
-        return this.role === Role.AGENT;
-      },
     },
     approvalStatus: {
       type: String,

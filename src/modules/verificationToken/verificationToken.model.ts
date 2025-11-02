@@ -11,12 +11,12 @@ const verificationTokenSchema = new Schema<IVerificationToken>({
   token: {
     type: String,
     required: true,
-    unique: true, // Ensure uniqueness of token hash for queries
+    unique: true,
   },
   expiresAt: {
     type: Date,
     required: true,
-    index: { expires: 0 }, // TTL index
+    index: { expires: 0 },
   },
   createdAt: {
     type: Date,

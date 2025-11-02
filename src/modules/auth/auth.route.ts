@@ -23,7 +23,7 @@ router.post(
 
 router.post(
   "/logout",
-  checkAuth(Role.USER, Role.AGENT, Role.ADMIN),
+  checkAuth(Role.USER, Role.AGENT, Role.ADMIN, Role.SUPER_ADMIN),
   AuthControllers.logoutUser,
 );
 

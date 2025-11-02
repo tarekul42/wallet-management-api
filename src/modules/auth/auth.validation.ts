@@ -40,8 +40,7 @@ const registerUserValidationSchema = z
     nid: z
       .string({ invalid_type_error: "NID must be string" })
       .length(10, { message: "NID must be exactly 10 digits" })
-      .regex(/^\d+$/, { message: "NID must contain only digits" })
-      .optional(),
+      .regex(/^\d+$/, { message: "NID must contain only digits" }),
     role: z.enum(Object.values(Role) as [string, ...string[]]).optional(),
     isActive: z
       .enum(Object.values(IsActive) as [string, ...string[]])

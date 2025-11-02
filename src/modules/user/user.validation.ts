@@ -53,6 +53,18 @@ export const createUserZodSchema = z
     path: ["confirmPassword"],
   });
 
+export const createAdminZodSchema = z.object({
+  name: z.string().min(2).max(50),
+  email: z.string().email(),
+  password: z
+    .string()
+    .min(6)
+    .regex(
+      /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={[}\]:;"'`~<>,.?/\\-]).{6,}$/,
+    ),
+  role: z.enum([Role.ADMIN, Role.SUPER_ADMIN]),
+});
+
 export const updateUserZodSchema = z.object({
   name: z
     .string({ invalid_type_error: "Name must be string" })
@@ -87,8 +99,25 @@ export const updateUserZodSchema = z.object({
     .optional(),
 });
 
+export const updatePasswordZodSchema = z
+  .object({
+    oldPassword: z.string(),
+    newPassword: z
+      .string()
+      .min(6)
+      .regex(
+        /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={[}\]:;"'`~<>,.?/\\-]).{6,}$/,
+      ),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
 export const agentApprovalZodSchema = z.object({
   approvalStatus: z.enum(
     Object.values(ApprovalStatus) as [string, ...string[]],
   ),
+  commissionRate: z.number().positive().optional(),
 });

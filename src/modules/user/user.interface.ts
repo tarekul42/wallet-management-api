@@ -33,7 +33,7 @@ export interface IUser {
   isVerified?: boolean;
   role: Role;
   wallet?: Types.ObjectId;
-  commissionRate?: number;
+  commissionRate?: number | null;
   approvalStatus?: ApprovalStatus;
   createdAt?: Date;
   updatedAt?: Date;

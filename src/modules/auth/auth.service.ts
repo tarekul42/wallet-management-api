@@ -93,14 +93,20 @@ const registerUser = async (payload: IUser) => {
     );
   }
 
-  // Set default values for agents
-  if (payload.role === "AGENT") {
-    payload.approvalStatus = ApprovalStatus.PENDING;
-    payload.commissionRate = 0.02;
-  }
+  // Sanitize payload to prevent mass assignment
+  const userData: Partial<IUser> = {
+    name: payload.name,
+    email: payload.email,
+    password: payload.password,
+    phone: payload.phone,
+    role: payload.role,
+  };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { confirmPassword, ...userData } = payload;
+  // Set default values for agents
+  if (userData.role === "AGENT") {
+    userData.approvalStatus = ApprovalStatus.PENDING;
+    userData.commissionRate = null; // Rate will be set upon approval
+  }
 
   const session = await mongoose.startSession();
   let result;
@@ -119,15 +125,27 @@ const registerUser = async (payload: IUser) => {
       );
     }
 
-    await Wallet.create(
+    // Create a wallet for the new user
+    const newWalletArr = await Wallet.create(
       [
         {
           owner: newUser._id,
-          balance: 50,
+          balance: 50, // Initial balance
         },
       ],
       { session },
     );
+
+    if (!newWalletArr.length) {
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Wallet creation failed during registration.",
+      );
+    }
+
+    // Link the wallet to the user
+    newUser.wallet = newWalletArr[0]._id;
+    await newUser.save({ session });
 
     const verificationToken = await createVerificationToken(newUser._id);
 
