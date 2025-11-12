@@ -12,29 +12,48 @@ router.post(
   "/register",
   authLimiter,
   validateRequest(AuthValidations.registerUserValidationSchema),
-  AuthControllers.registerUser
+  AuthControllers.registerUser,
 );
-
-router.get("/verify-email", authLimiter, AuthControllers.verifyEmail);
 
 router.post(
   "/login",
   authLimiter,
   validateRequest(AuthValidations.loginUserValidationSchema),
-  AuthControllers.credentialsLogin
+  AuthControllers.credentialsLogin,
 );
 
 router.post(
   "/logout",
   authLimiter,
   checkAuth(Role.USER, Role.AGENT, Role.ADMIN, Role.SUPER_ADMIN),
-  AuthControllers.logoutUser
+  AuthControllers.logoutUser,
 );
 
 router.post(
   "/refresh-token",
   authLimiter,
   AuthControllers.getNewAccessToken
+);
+
+router.post(
+  "/verify-email",
+  authLimiter,
+  validateRequest(AuthValidations.verifyEmailValidationSchema),
+  AuthControllers.verifyEmail,
+);
+
+router.post(
+  "/forgot-password",
+  authLimiter,
+  validateRequest(AuthValidations.forgotPasswordValidationSchema),
+  AuthControllers.forgotPassword,
+);
+
+router.post(
+  "/reset-password",
+  authLimiter,
+  validateRequest(AuthValidations.resetPasswordValidationSchema),
+  AuthControllers.resetPassword,
 );
 
 export const AuthRoutes = router;

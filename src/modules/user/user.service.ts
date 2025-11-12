@@ -7,6 +7,7 @@ import { Wallet } from "../wallet/wallet.model";
 import { WalletStatus } from "../wallet/wallet.interface";
 import { createUserAndWallet } from "./user.helpers";
 import bcrypt from "bcryptjs";
+import { notifyAgentApproved, notifyAgentSuspended } from "../../utils/notification.utils";
 
 // Service to get a user's own profile
 const getMyProfile = async (userId: string) => {
@@ -53,7 +54,7 @@ const getAllUsers = async (query: Record<string, unknown>) => {
     if (!Object.values(Role).includes(query.role as Role)) {
       throw new AppError(StatusCodes.BAD_REQUEST, "Invalid role value");
     }
-    filter.role = { $eq: String(query.role) as Role };
+    filter.role = { $eq: query.role as Role };
   }
 
   if (query.approvalStatus) {
@@ -73,7 +74,7 @@ const getAllUsers = async (query: Record<string, unknown>) => {
         "Invalid approvalStatus value",
       );
     }
-    filter.approvalStatus = { $eq: String(query.approvalStatus) as ApprovalStatus };
+    filter.approvalStatus = { $eq: query.approvalStatus as ApprovalStatus };
   }
 
   const result = await User.find(filter);
@@ -101,7 +102,7 @@ const updateUserStatus = async (
     if (currentUserId === targetUserId) {
       throw new AppError(StatusCodes.BAD_REQUEST, "You cannot block yourself.");
     }
-    if (targetUser.role === Role.ADMIN) {
+    if (targetUser.role === Role.ADMIN || targetUser.role === Role.SUPER_ADMIN) {
       throw new AppError(
         StatusCodes.FORBIDDEN,
         "Admins cannot block other admins.",
@@ -123,6 +124,7 @@ const updateUserStatus = async (
         newStatus === IsActive.BLOCKED
           ? WalletStatus.BLOCKED
           : WalletStatus.ACTIVE;
+
       await Wallet.findOneAndUpdate(
         { _id: { $eq: String(targetUser.wallet) } },
         { $set: { status: walletStatus } },
@@ -187,6 +189,15 @@ const agentApprovalByAdmin = async (
   if (payload.approvalStatus === ApprovalStatus.APPROVED) {
     agent.approvalStatus = ApprovalStatus.APPROVED;
     agent.commissionRate = payload.commissionRate || 0.02;
+
+    // Notify agent
+    notifyAgentApproved({
+      userId: agent._id.toString(),
+      email: agent.email,
+      name: agent.name,
+      commissionRate: agent.commissionRate
+    });
+
   } else {
     agent.approvalStatus = ApprovalStatus.REJECTED;
     agent.commissionRate = null;
@@ -222,6 +233,14 @@ const suspendAgent = async (
       );
     }
     agent.approvalStatus = ApprovalStatus.SUSPENDED;
+
+    // Notify agent
+    notifyAgentSuspended({
+      userId: agent._id.toString(),
+      email: agent.email,
+      name: agent.name
+    });
+
   } else if (newStatus === ApprovalStatus.APPROVED) {
     if (agent.approvalStatus !== ApprovalStatus.SUSPENDED) {
       throw new AppError(
