@@ -1,7 +1,14 @@
 import rateLimit from "express-rate-limit";
 import { Request, Response } from "express";
 import httpStatus from "http-status-codes";
+import sendResponse from "../utils/sendResponse";
 
+/**
+ * Helper function to create a rate limiter with a consistent response format.
+ * @param max - Maximum number of requests
+ * @param windowMs - Time window in milliseconds (default 15 minutes)
+ * @param message - Custom error message
+ */
 const createLimiter = (max: number, windowMs: number = 15 * 60 * 1000, message = "Too many requests, Please try again later.") => {
     return rateLimit({
         windowMs,
@@ -9,7 +16,7 @@ const createLimiter = (max: number, windowMs: number = 15 * 60 * 1000, message =
         standardHeaders: true,
         legacyHeaders: false,
         handler: (req: Request, res: Response) => {
-            res.status(httpStatus.TOO_MANY_REQUESTS).json({
+            sendResponse(res, {
                 success: false,
                 statusCode: httpStatus.TOO_MANY_REQUESTS,
                 message,
@@ -19,20 +26,24 @@ const createLimiter = (max: number, windowMs: number = 15 * 60 * 1000, message =
     });
 };
 
-const generalApiRateLimiter = createLimiter(100);
-const authLimiter = createLimiter(20);
-const adminActionLimiter = createLimiter(30, 1 * 60 * 1000);
-const selfActionLimiter = createLimiter(60, 1 * 60 * 1000);
-const transactionRateLimiter = createLimiter(100);
-const systemConfigUpdateLimiter = createLimiter(50);
-const walletActionLimiter = createLimiter(50);
+// General API limiter
+export const generalApiRateLimiter = createLimiter(100);
+export const apiLimiter = generalApiRateLimiter; // Maintain compatibility
 
-export {
-    generalApiRateLimiter,
-    authLimiter,
-    adminActionLimiter,
-    selfActionLimiter,
-    transactionRateLimiter,
-    systemConfigUpdateLimiter,
-    walletActionLimiter,
-};
+// Authentication limiter (stricter)
+export const authLimiter = createLimiter(20);
+
+// Admin actions limiter
+export const adminActionLimiter = createLimiter(30, 1 * 60 * 1000);
+
+// User self-actions (profile updates etc.)
+export const selfActionLimiter = createLimiter(60, 1 * 60 * 1000);
+
+// Transaction limiter
+export const transactionRateLimiter = createLimiter(100);
+
+// System config update limiter
+export const systemConfigUpdateLimiter = createLimiter(50);
+
+// Wallet action limiter
+export const walletActionLimiter = createLimiter(50);

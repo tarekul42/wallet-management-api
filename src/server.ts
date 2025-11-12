@@ -7,21 +7,19 @@ let server: Server;
 
 const gracefulShutdown = async (signal: string, error?: Error) => {
   if (error) {
-    console.error(
-      `\nReceived ${signal}. Server Shutting down due to error: `,
-      error,
-    );
+    console.error(`Shutting down due to ${signal}.`, error);
   } else {
-    console.info(`\nReceived ${signal}. Server Shutting down gracefully`);
+    console.info(`${signal} signal received. Server shutting down...`);
   }
 
+  // Allow time for cleanup, then force exit
   setTimeout(() => {
     console.warn("Shutdown timed out. Forcing exit.");
     process.exit(1);
-  }, 10000).unref();
+  }, 10000).unref(); // .unref() allows the process to exit if it finishes before the timeout
 
   try {
-    // stop server from accepting new connections
+    // 1. Stop the server from accepting new connections
     if (server) {
       await new Promise<void>((resolve, reject) => {
         server.close((err) => {
@@ -34,15 +32,16 @@ const gracefulShutdown = async (signal: string, error?: Error) => {
       });
     }
 
-    // close database connection
+    // 2. Close the database connection
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.close();
       console.info("Database connection closed.");
     }
-  } catch (error) {
-    console.error(`Error during graceful shutdown: `, error);
+  } catch (shutdownError) {
+    console.error("Error during graceful shutdown:", shutdownError);
     process.exit(1);
   }
+
   process.exit(error ? 1 : 0);
 };
 
@@ -55,7 +54,8 @@ const startServer = async () => {
       console.info(`Server is listening to port ${envVars.PORT}`);
     });
   } catch (error) {
-    console.error("Failed to start server", error);
+    console.error("Failed to start server:", error);
+    // Ensure DB connection is closed if startup fails
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.close();
     }
@@ -63,9 +63,7 @@ const startServer = async () => {
   }
 };
 
-(async () => {
-  await startServer();
-})();
+startServer();
 
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 process.on("SIGINT", () => gracefulShutdown("SIGINT"));

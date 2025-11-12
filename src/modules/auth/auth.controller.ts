@@ -48,8 +48,6 @@ const registerUser = catchAsync(async (req: Request, res: Response) => {
 
 const credentialsLogin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    // const loginInfo = await AuthServices.credentialsLogin(req.body)
-
     passport.authenticate(
       "local",
       async (
@@ -105,14 +103,14 @@ const logoutUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 const verifyEmail = catchAsync(async (req: Request, res: Response) => {
-  const { token } = req.body;
+  const token = (req.query.token as string) || (req.body.token as string);
   const result = await AuthServices.verifyEmail(token);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: "Email verified successfully",
-    data: result,
+    message: result.message,
+    data: null,
   });
 });
 
@@ -123,8 +121,8 @@ const forgotPassword = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: "Password reset email sent",
-    data: result,
+    message: result.message,
+    data: null,
   });
 });
 
@@ -135,8 +133,8 @@ const resetPassword = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: "Password reset successfully",
-    data: result,
+    message: result.message,
+    data: null,
   });
 });
 
