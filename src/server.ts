@@ -7,19 +7,21 @@ let server: Server;
 
 const gracefulShutdown = async (signal: string, error?: Error) => {
   if (error) {
-    console.error(`Shutting down due to ${signal}.`, error);
+    console.error(
+      `\nReceived ${signal}. Server Shutting down due to error: `,
+      error,
+    );
   } else {
-    console.info(`${signal} signal received. Server shutting down...`);
+    console.info(`\nReceived ${signal}. Server Shutting down gracefully`);
   }
 
-  // Allow time for cleanup, then force exit
   setTimeout(() => {
     console.warn("Shutdown timed out. Forcing exit.");
     process.exit(1);
-  }, 10000).unref(); // .unref() allows the process to exit if it finishes before the timeout
+  }, 10000).unref();
 
   try {
-    // 1. Stop the server from accepting new connections
+    // stop server from accepting new connections
     if (server) {
       await new Promise<void>((resolve, reject) => {
         server.close((err) => {
@@ -32,30 +34,28 @@ const gracefulShutdown = async (signal: string, error?: Error) => {
       });
     }
 
-    // 2. Close the database connection
+    // close database connection
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.close();
       console.info("Database connection closed.");
     }
-  } catch (shutdownError) {
-    console.error("Error during graceful shutdown:", shutdownError);
+  } catch (error) {
+    console.error(`Error during graceful shutdown: `, error);
     process.exit(1);
   }
-
   process.exit(error ? 1 : 0);
 };
 
 const startServer = async () => {
   try {
     await mongoose.connect(envVars.DB_URL);
-    console.info("Connected to database!!");
+    console.info("Connected to MongoDB!");
 
     server = app.listen(envVars.PORT, () => {
       console.info(`Server is listening to port ${envVars.PORT}`);
     });
   } catch (error) {
-    console.error("Failed to start server:", error);
-    // Ensure DB connection is closed if startup fails
+    console.error("Failed to start server", error);
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.close();
     }
@@ -63,7 +63,9 @@ const startServer = async () => {
   }
 };
 
-startServer();
+(async () => {
+  await startServer();
+})();
 
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 process.on("SIGINT", () => gracefulShutdown("SIGINT"));
