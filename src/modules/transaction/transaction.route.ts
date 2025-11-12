@@ -14,7 +14,6 @@ const router = express.Router();
 
 router.use(transactionRateLimiter);
 
-
 router.post(
   "/send-money",
   checkAuth(Role.USER),

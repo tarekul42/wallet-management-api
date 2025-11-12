@@ -7,18 +7,16 @@ let server: Server;
 
 const gracefulShutdown = async (signal: string, error?: Error) => {
   if (error) {
-    console.error(
-      `\nReceived ${signal}. Server Shutting down due to error: `,
-      error,
-    );
+    console.error(`Shutting down due to ${signal}.`, error);
   } else {
-    console.info(`\nReceived ${signal}. Server Shutting down gracefully`);
+    console.info(`${signal} signal received. Server shutting down...`);
   }
 
+  // Allow time for cleanup, then force exit
   setTimeout(() => {
     console.warn("Shutdown timed out. Forcing exit.");
     process.exit(1);
-  }, 10000).unref();
+  }, 10000).unref(); // .unref() allows the process to exit if it finishes before the timeout
 
   try {
     // 1. Stop the server from accepting new connections

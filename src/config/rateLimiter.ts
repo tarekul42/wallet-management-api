@@ -1,6 +1,7 @@
 import rateLimit from "express-rate-limit";
 import { Request, Response } from "express";
 import httpStatus from "http-status-codes";
+import sendResponse from "../utils/sendResponse";
 
 /**
  * Helper function to create a rate limiter with a consistent response format.
@@ -15,7 +16,7 @@ const createLimiter = (max: number, windowMs: number = 15 * 60 * 1000, message =
         standardHeaders: true,
         legacyHeaders: false,
         handler: (req: Request, res: Response) => {
-            res.status(httpStatus.TOO_MANY_REQUESTS).json({
+            sendResponse(res, {
                 success: false,
                 statusCode: httpStatus.TOO_MANY_REQUESTS,
                 message,
@@ -32,10 +33,10 @@ export const generalApiRateLimiter = apiLimiter; // for compatibility
 // Authentication limiter (stricter)
 export const authLimiter = createLimiter(20);
 
-// Admin actions limiter - Adopted 1 minute window from incoming commit
+// Admin actions limiter
 export const adminActionLimiter = createLimiter(30, 1 * 60 * 1000);
 
-// User self-actions (profile updates etc.) - Adopted 1 minute window and limit of 60 from incoming commit
+// User self-actions (profile updates etc.)
 export const selfActionLimiter = createLimiter(60, 1 * 60 * 1000);
 
 // Transaction limiter
