@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import bcrypt from "bcryptjs";
 import { model, Schema } from "mongoose";
 import { ApprovalStatus, IsActive, IUser, Role } from "./user.interface";
@@ -30,7 +31,7 @@ const userSchema = new Schema<IUser>(
     },
     nid: {
       type: String,
-      required: function () {
+      required: function (this: any): boolean {
         return this.role === Role.USER || this.role === Role.AGENT;
       }, // so that, admins will be able to add without nid requirement
     },
@@ -51,7 +52,7 @@ const userSchema = new Schema<IUser>(
     },
     isVerified: {
       type: Boolean,
-      default: true, // TODO: will be changed latter
+      default: false,
     },
     wallet: {
       type: Schema.Types.ObjectId,
@@ -65,7 +66,7 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: Object.values(ApprovalStatus),
       default: null,
-      required: function () {
+      required: function (this: any): boolean {
         return this.role === Role.AGENT;
       },
     },
@@ -73,7 +74,7 @@ const userSchema = new Schema<IUser>(
   {
     timestamps: true,
     versionKey: false,
-  },
+  }
 );
 
 // Hash password before saving
@@ -81,7 +82,7 @@ userSchema.pre("save", async function (next) {
   if (this.isModified("password")) {
     this.password = await bcrypt.hash(
       this.password,
-      Number(envVars.BCRYPT_SALT_ROUND),
+      Number(envVars.BCRYPT_SALT_ROUND)
     );
   }
   next();

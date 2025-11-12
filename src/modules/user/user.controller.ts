@@ -4,6 +4,8 @@ import httpStatus from "http-status-codes";
 import { UserServices } from "./user.service";
 import { sendResponse } from "../../utils/sendResponse";
 import { catchAsync } from "../../utils/catchAsync";
+import AppError from "../../errorHelpers/AppError";
+import { ApprovalStatus } from "./user.interface";
 
 const getMyProfile = catchAsync(async (req: Request, res: Response) => {
   const user = req.user as JwtPayload;
@@ -28,11 +30,12 @@ const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAllUsers = catchAsync(async (req: Request, res: Response) => {
-  const result = await UserServices.getAllUsers();
+  const result = await UserServices.getAllUsers(req.query);
+
   sendResponse(res, {
-    statusCode: httpStatus.OK,
     success: true,
-    message: "Users fetched successfully",
+    statusCode: httpStatus.OK,
+    message: "Users retrieved successfully",
     data: result,
   });
 });
@@ -75,6 +78,42 @@ const agentApprovalByAdmin = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// Define allowed incoming body for suspendAgent
+interface SuspendAgentBody {
+  status: "suspended" | "active";
+}
+
+const suspendAgent = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { status } = req.body as SuspendAgentBody;
+
+  // Validate input
+  if (!status || (status !== "suspended" && status !== "active")) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "Invalid status. Expected 'suspended' or 'active'."
+    );
+  }
+
+  // Map incoming status to ApprovalStatus used by the service
+  const mappedStatus =
+    status === "suspended" ? ApprovalStatus.SUSPENDED : ApprovalStatus.APPROVED;
+
+  const result = await UserServices.suspendAgent(id, mappedStatus);
+
+  const messageMap: Record<string, string> = {
+    suspended: "Agent has been successfully suspended.",
+    active: "Agent has been successfully activated.",
+  };
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: messageMap[status] || "Agent status updated successfully.",
+    data: result,
+  });
+});
+
 const updatePassword = catchAsync(async (req: Request, res: Response) => {
   const user = req.user as JwtPayload;
   const result = await UserServices.updatePassword(user.userId, req.body);
@@ -99,10 +138,11 @@ const createAdmin = catchAsync(async (req: Request, res: Response) => {
 export const UserControllers = {
   getMyProfile,
   updateMyProfile,
+  createAdmin,
   getAllUsers,
   blockUser,
   unblockUser,
   agentApprovalByAdmin,
+  suspendAgent,
   updatePassword,
-  createAdmin,
 };

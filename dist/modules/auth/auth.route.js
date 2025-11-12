@@ -1,0 +1,20 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AuthRoutes = void 0;
+const express_1 = require("express");
+const checkAuth_1 = __importDefault(require("../../middlewares/checkAuth"));
+const user_interface_1 = require("../user/user.interface");
+const auth_controller_1 = require("./auth.controller");
+const auth_validation_1 = require("./auth.validation");
+const validateRequest_1 = require("../../middlewares/validateRequest");
+const rateLimiter_1 = require("../../config/rateLimiter");
+const router = (0, express_1.Router)();
+router.post("/register", rateLimiter_1.authLimiter, (0, validateRequest_1.validateRequest)(auth_validation_1.AuthValidations.registerUserValidationSchema), auth_controller_1.AuthControllers.registerUser);
+router.get("/verify-email", rateLimiter_1.authLimiter, auth_controller_1.AuthControllers.verifyEmail);
+router.post("/login", rateLimiter_1.authLimiter, (0, validateRequest_1.validateRequest)(auth_validation_1.AuthValidations.loginUserValidationSchema), auth_controller_1.AuthControllers.credentialsLogin);
+router.post("/logout", rateLimiter_1.authLimiter, (0, checkAuth_1.default)(user_interface_1.Role.USER, user_interface_1.Role.AGENT, user_interface_1.Role.ADMIN, user_interface_1.Role.SUPER_ADMIN), auth_controller_1.AuthControllers.logoutUser);
+router.post("/refresh-token", rateLimiter_1.authLimiter, auth_controller_1.AuthControllers.getNewAccessToken);
+exports.AuthRoutes = router;

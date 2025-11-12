@@ -5,66 +5,77 @@ import checkAuth from "../../middlewares/checkAuth";
 import {
   agentApprovalZodSchema,
   createAdminZodSchema,
+  suspendAgentZodSchema,
   updatePasswordZodSchema,
+  updateUserZodSchema,
 } from "./user.validation";
-import validateRequest from "../../middlewares/validateRequest";
-import rateLimit from "express-rate-limit";
+import { validateRequest } from "../../middlewares/validateRequest";
+import { adminActionLimiter, selfActionLimiter } from "../../config/rateLimiter";
 
 const router = Router();
 
-const createAdminRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 create-admin requests per windowMs
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
 router.get(
   "/me",
+  selfActionLimiter,
   checkAuth(Role.USER, Role.ADMIN, Role.AGENT, Role.SUPER_ADMIN),
-  UserControllers.getMyProfile,
+  UserControllers.getMyProfile
 );
 router.patch(
   "/me",
+  selfActionLimiter,
   checkAuth(Role.USER, Role.ADMIN, Role.AGENT, Role.SUPER_ADMIN),
-  UserControllers.updateMyProfile,
+  validateRequest(updateUserZodSchema),
+  UserControllers.updateMyProfile
 );
 
 router.patch(
   "/me/update-password",
+  selfActionLimiter,
   checkAuth(Role.USER, Role.ADMIN, Role.AGENT, Role.SUPER_ADMIN),
   validateRequest(updatePasswordZodSchema),
-  UserControllers.updatePassword,
+  UserControllers.updatePassword
 );
-  createAdminRateLimiter,
 
 router.post(
   "/create-admin",
+  adminActionLimiter,
   checkAuth(Role.SUPER_ADMIN),
   validateRequest(createAdminZodSchema),
-  UserControllers.createAdmin,
+  UserControllers.createAdmin
 );
 
 router.get(
   "/",
+  adminActionLimiter,
   checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
-  UserControllers.getAllUsers,
+  UserControllers.getAllUsers
 );
 router.patch(
   "/:id/block",
+  adminActionLimiter,
   checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
-  UserControllers.blockUser,
+  UserControllers.blockUser
 );
 router.patch(
   "/:id/unblock",
+  adminActionLimiter,
   checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
-  UserControllers.unblockUser,
+  UserControllers.unblockUser
 );
 router.patch(
   "/:id/approval",
+  adminActionLimiter,
   checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
   validateRequest(agentApprovalZodSchema),
-  UserControllers.agentApprovalByAdmin,
+  UserControllers.agentApprovalByAdmin
+);
+
+router.patch(
+  "/:id/suspend",
+  adminActionLimiter,
+  checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
+  validateRequest(suspendAgentZodSchema),
+  UserControllers.suspendAgent
 );
 
 export const UserRoutes = router;

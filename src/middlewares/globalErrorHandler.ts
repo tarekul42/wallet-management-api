@@ -1,18 +1,16 @@
-/* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextFunction, Request, Response } from "express";
 import { envVars } from "../config/env";
-import AppError from "../errorHelpers/AppError";
 import { TErrorSources } from "../interfaces/error.types";
 import handleDuplicateError from "../helpers/handleDuplicacteError";
 import handleCastError from "../helpers/handleCastError";
 import handleZodError from "../helpers/handleZodError";
 import handleValidationError from "../helpers/handleValidationError";
-import mongoose from "mongoose";
-import { ZodError } from "zod";
+import AppError from "../errorHelpers/AppError";
 
-export const globalErrorHandler = (
-  err: Error,
+const globalErrorHandler = (
+  err: any,
   req: Request,
   res: Response,
   next: NextFunction,
@@ -21,51 +19,38 @@ export const globalErrorHandler = (
     console.log(err);
   }
 
-  let statusCode = 500;
-  let message = "Something Went Wrong!!";
   let errorSources: TErrorSources[] = [];
+  let statusCode = 500;
+  let message = "Something went wrong";
 
-  // type guard
-  const hasCodeProperty = (err: unknown): err is { code: number } => {
-    return (
-      typeof err === "object" &&
-      err !== null &&
-      "code" in err &&
-      typeof (err as { code?: unknown }).code === "number"
-    );
-  };
-
-  //Duplicate error
-  if (hasCodeProperty(err) && err.code === 11000) {
+  // duplicate error handling logic
+  if (err.code === 11000) {
     const simplifiedError = handleDuplicateError(err);
     statusCode = simplifiedError.statusCode;
     message = simplifiedError.message;
   }
-  // Object ID error / Cast Error
-  else if (
-    err.name === "CastError" &&
-    err instanceof mongoose.Error.CastError
-  ) {
+
+  // objectid/cast error
+  else if (err.name === "CastError") {
     const simplifiedError = handleCastError(err);
     statusCode = simplifiedError.statusCode;
     message = simplifiedError.message;
   }
-  //   Zod validation Error
-  else if (err.name === "ZodError" && err instanceof ZodError) {
+
+  // handle zod error
+  else if (err.name === "ZodError") {
     const simplifiedError = handleZodError(err);
     statusCode = simplifiedError.statusCode;
     message = simplifiedError.message;
     errorSources = simplifiedError.errorSources as TErrorSources[];
   }
-  //Mongoose Validation Error
-  else if (
-    err.name === "ValidationError" &&
-    err instanceof mongoose.Error.ValidationError
-  ) {
+
+  // mongoose validation error
+  else if (err.name === "ValidationError") {
     const simplifiedError = handleValidationError(err);
     statusCode = simplifiedError.statusCode;
-    errorSources = simplifiedError.errorSources as TErrorSources[];
     message = simplifiedError.message;
+    errorSources = simplifiedError.errorSources as TErrorSources[];
   } else if (err instanceof AppError) {
     statusCode = err.statusCode;
     message = err.message;
@@ -82,3 +67,5 @@ export const globalErrorHandler = (
     stack: envVars.NODE_ENV === "development" ? err.stack : null,
   });
 };
+
+export default globalErrorHandler;
