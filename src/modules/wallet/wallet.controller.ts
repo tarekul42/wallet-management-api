@@ -1,7 +1,7 @@
 import { StatusCodes } from "http-status-codes";
-import { catchAsync } from "../../utils/catchAsync";
+import catchAsync from "../../utils/catchAsync";
 import { WalletServices } from "./wallet.service";
-import { sendResponse } from "../../utils/sendResponse";
+import sendResponse from "../../utils/sendResponse";
 import { Request, Response } from "express";
 import { JwtPayload } from "jsonwebtoken";
 
