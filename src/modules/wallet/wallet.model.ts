@@ -1,11 +1,15 @@
 import { model, Schema } from "mongoose";
-import { IWallet } from "./wallet.interface";
+import { IWallet, WalletStatus } from "./wallet.interface";
 
 const walletSchema = new Schema<IWallet>(
   {
     owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
     balance: { type: Number, required: true, default: 50 },
-    status: { type: String, enum: ["ACTIVE", "BLOCKED"], default: "ACTIVE" },
+    status: {
+      type: String,
+      enum: Object.values(WalletStatus),
+      default: WalletStatus.ACTIVE,
+    },
   },
   {
     timestamps: true,

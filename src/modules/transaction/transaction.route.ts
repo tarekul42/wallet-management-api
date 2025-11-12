@@ -1,56 +1,47 @@
 import express from "express";
 import { Role } from "../user/user.interface";
 import { TransactionControllers } from "./transaction.controller";
-import { z } from "zod";
-import validateRequest from "../../middlewares/validateRequest";
 import checkAuth from "../../middlewares/checkAuth";
+import {
+  addMoneyValidationSchema,
+  sendMoneyValidationSchema,
+  withdrawMoneyValidationSchema,
+} from "./transaction.validation";
+import { validateRequest } from "../../middlewares/validateRequest";
 
 const router = express.Router();
-
-const addMoneyValidationSchema = z.object({
-  body: z.object({
-    amount: z.number().positive("Amount must be a positive number."),
-  }),
-});
-
-router.post(
-  "/add-money",
-  checkAuth(Role.USER),
-  validateRequest(addMoneyValidationSchema),
-  TransactionControllers.addMoneyTopUp
-);
-
-const sendMoneyValidationSchema = z.object({
-  body: z.object({
-    amount: z.number().positive("Amount must be a positive number."),
-    receiverPhone: z.string().min(1, "Receiver phone number is required."),
-  }),
-});
 
 router.post(
   "/send-money",
   checkAuth(Role.USER),
   validateRequest(sendMoneyValidationSchema),
-  TransactionControllers.sendMoney
+  TransactionControllers.sendMoney,
 );
 
-const withdrawMoneyValidationSchema = z.object({
-  body: z.object({
-    amount: z.number().positive("Amount must be a positive number."),
-  }),
-});
+router.post(
+  "/add-money",
+  checkAuth(Role.USER, Role.AGENT),
+  validateRequest(addMoneyValidationSchema),
+  TransactionControllers.addMoney,
+);
 
 router.post(
   "/withdraw-money",
-  checkAuth(Role.USER),
+  checkAuth(Role.USER, Role.AGENT),
   validateRequest(withdrawMoneyValidationSchema),
-  TransactionControllers.withdrawMoney
+  TransactionControllers.withdrawMoney,
 );
 
 router.get(
   "/history",
-  checkAuth(Role.USER),
-  TransactionControllers.getTransactionHistory
+  checkAuth(Role.USER, Role.AGENT, Role.ADMIN),
+  TransactionControllers.viewHistory,
+);
+
+router.get(
+  "/get-commission-history",
+  checkAuth(Role.AGENT, Role.ADMIN),
+  TransactionControllers.getCommissionHistory,
 );
 
 export const TransactionRoutes = router;

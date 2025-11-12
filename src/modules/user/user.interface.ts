@@ -13,10 +13,12 @@ export enum IsActive {
   BLOCKED = "BLOCKED",
 }
 
+// this will be applied for agents only
 export enum ApprovalStatus {
   PENDING = "PENDING",
   APPROVED = "APPROVED",
   REJECTED = "REJECTED",
+  SUSPENDED = "SUSPENDED",
 }
 
 export interface IUser {

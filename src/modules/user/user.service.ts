@@ -1,10 +1,12 @@
-import bcrypt from "bcryptjs";
 import { StatusCodes } from "http-status-codes";
-import mongoose from "mongoose";
 import AppError from "../../errorHelpers/AppError";
-import { Wallet } from "../wallet/wallet.model";
-import { ApprovalStatus, IsActive, IUser, Role } from "./user.interface";
 import { User } from "./user.model";
+import { ApprovalStatus, IsActive, IUser, Role } from "./user.interface";
+import mongoose from "mongoose";
+import { Wallet } from "../wallet/wallet.model";
+import { WalletStatus } from "../wallet/wallet.interface";
+import { createUserAndWallet } from "./user.helpers";
+import bcrypt from "bcryptjs";
 
 // Service to get a user's own profile
 const getMyProfile = async (userId: string) => {
@@ -38,26 +40,70 @@ const updateMyProfile = async (userId: string, payload: Partial<IUser>) => {
   return result;
 };
 
-const getAllUsers = async () => {
-  const result = await User.find({});
+const getAllUsers = async (query: Record<string, unknown>) => {
+  const filter: mongoose.FilterQuery<IUser> = {};
+
+  if (query.role) {
+    if (typeof query.role !== "string") {
+      throw new AppError(StatusCodes.BAD_REQUEST, "Invalid role filter.");
+    }
+    if (!Object.values(Role).includes(query.role as Role)) {
+      throw new AppError(StatusCodes.BAD_REQUEST, "Invalid role value");
+    }
+    filter.role = query.role;
+  }
+
+  if (query.approvalStatus) {
+    if (typeof query.approvalStatus !== "string") {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Invalid approvalStatus filter.",
+      );
+    }
+    if (
+      !Object.values(ApprovalStatus).includes(
+        query.approvalStatus as ApprovalStatus,
+      )
+    ) {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Invalid approvalStatus value",
+      );
+    }
+    filter.approvalStatus = query.approvalStatus;
+  }
+
+  const result = await User.find(filter);
   return result;
 };
 
-const blockUser = async (currentUserId: string, targetUserId: string) => {
+const updateUserStatus = async (
+  targetUserId: string,
+  newStatus: IsActive.ACTIVE | IsActive.BLOCKED,
+  currentUserId?: string,
+) => {
   const targetUser = await User.findById(targetUserId);
   if (!targetUser) {
-    throw new AppError(StatusCodes.NOT_FOUND, "User to block not found");
+    throw new AppError(StatusCodes.NOT_FOUND, "Target user not found");
   }
 
-  if (currentUserId === targetUserId) {
-    throw new AppError(StatusCodes.BAD_REQUEST, "You cannot block yourself.");
-  }
-
-  if (targetUser.role === Role.ADMIN) {
-    throw new AppError(
-      StatusCodes.FORBIDDEN,
-      "Admins cannot block other admins.",
-    );
+  // Only enforce these checks when attempting to BLOCK a user
+  if (newStatus === IsActive.BLOCKED) {
+    if (!currentUserId) {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Current user ID is required for blocking operations.",
+      );
+    }
+    if (currentUserId === targetUserId) {
+      throw new AppError(StatusCodes.BAD_REQUEST, "You cannot block yourself.");
+    }
+    if (targetUser.role === Role.ADMIN) {
+      throw new AppError(
+        StatusCodes.FORBIDDEN,
+        "Admins cannot block other admins.",
+      );
+    }
   }
 
   const session = await mongoose.startSession();
@@ -66,13 +112,17 @@ const blockUser = async (currentUserId: string, targetUserId: string) => {
   try {
     session.startTransaction();
 
-    targetUser.isActive = IsActive.BLOCKED;
+    targetUser.isActive = newStatus;
     updatedUser = await targetUser.save({ session });
 
     if (targetUser.wallet) {
+      const walletStatus =
+        newStatus === IsActive.BLOCKED
+          ? WalletStatus.BLOCKED
+          : WalletStatus.ACTIVE;
       await Wallet.findByIdAndUpdate(
         targetUser.wallet,
-        { status: "BLOCKED" },
+        { status: walletStatus },
         { session },
       );
     }
@@ -80,7 +130,7 @@ const blockUser = async (currentUserId: string, targetUserId: string) => {
     await session.commitTransaction();
   } catch (error) {
     await session.abortTransaction();
-    let errorMessage = "Failed to block user and wallet.";
+    let errorMessage = `Failed to ${newStatus.toLowerCase()} user and wallet.`;
     if (error instanceof Error) {
       errorMessage = `${errorMessage} Error: ${error.message}`;
     }
@@ -92,42 +142,12 @@ const blockUser = async (currentUserId: string, targetUserId: string) => {
   return updatedUser;
 };
 
+const blockUser = async (currentUserId: string, targetUserId: string) => {
+  return updateUserStatus(targetUserId, IsActive.BLOCKED, currentUserId);
+};
+
 const unblockUser = async (targetUserId: string) => {
-  const targetUser = await User.findById(targetUserId);
-  if (!targetUser) {
-    throw new AppError(StatusCodes.NOT_FOUND, "User to unblock not found");
-  }
-
-  const session = await mongoose.startSession();
-  let updatedUser;
-
-  try {
-    session.startTransaction();
-
-    targetUser.isActive = IsActive.ACTIVE;
-    updatedUser = await targetUser.save({ session });
-
-    if (targetUser.wallet) {
-      await Wallet.findByIdAndUpdate(
-        targetUser.wallet,
-        { status: "ACTIVE" },
-        { session },
-      );
-    }
-
-    await session.commitTransaction();
-  } catch (error) {
-    await session.abortTransaction();
-    let errorMessage = "Failed to unblock user and wallet.";
-    if (error instanceof Error) {
-      errorMessage = `${errorMessage} Error: ${error.message}`;
-    }
-    throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, errorMessage);
-  } finally {
-    session.endSession();
-  }
-
-  return updatedUser;
+  return updateUserStatus(targetUserId, IsActive.ACTIVE);
 };
 
 const agentApprovalByAdmin = async (
@@ -174,8 +194,54 @@ const agentApprovalByAdmin = async (
   return agent;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const updatePassword = async (userId: string, payload: any) => {
+const suspendAgent = async (
+  agentId: string,
+  newStatus: ApprovalStatus.SUSPENDED | ApprovalStatus.APPROVED,
+) => {
+  const agent = await User.findById(agentId);
+
+  if (!agent) {
+    throw new AppError(StatusCodes.NOT_FOUND, "Agent not found");
+  }
+
+  if (agent.role !== Role.AGENT) {
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      "This user is not an agent. You can only suspend agents.",
+    );
+  }
+
+  if (newStatus === ApprovalStatus.SUSPENDED) {
+    if (agent.approvalStatus !== ApprovalStatus.APPROVED) {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "You can only suspend an agent who is currently approved.",
+      );
+    }
+    agent.approvalStatus = ApprovalStatus.SUSPENDED;
+  } else if (newStatus === ApprovalStatus.APPROVED) {
+    if (agent.approvalStatus !== ApprovalStatus.SUSPENDED) {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "You can only re-approve an agent who is currently suspended.",
+      );
+    }
+    agent.approvalStatus = ApprovalStatus.APPROVED;
+  }
+
+  await agent.save();
+  return agent;
+};
+
+interface IUpdatePasswordPayload {
+  oldPassword: string;
+  newPassword: string;
+}
+
+const updatePassword = async (
+  userId: string,
+  payload: IUpdatePasswordPayload,
+) => {
   const user = await User.findById(userId).select("+password");
   if (!user) {
     throw new AppError(StatusCodes.NOT_FOUND, "User not found");
@@ -226,35 +292,7 @@ const createAdmin = async (payload: IUser) => {
       role: payload.role,
     };
 
-    const newUserArr = await User.create([adminData], { session });
-    const newUser = newUserArr[0];
-
-    if (!newUser) {
-      throw new AppError(
-        StatusCodes.INTERNAL_SERVER_ERROR,
-        "User creation failed during registration.",
-      );
-    }
-
-    const newWalletArr = await Wallet.create(
-      [
-        {
-          owner: newUser._id,
-          balance: 50,
-        },
-      ],
-      { session },
-    );
-
-    if (!newWalletArr.length) {
-      throw new AppError(
-        StatusCodes.INTERNAL_SERVER_ERROR,
-        "Wallet creation failed during registration.",
-      );
-    }
-
-    newUser.wallet = newWalletArr[0]._id;
-    await newUser.save({ session });
+    const newUser = await createUserAndWallet(adminData, session);
 
     await session.commitTransaction();
 
@@ -280,6 +318,7 @@ export const UserServices = {
   blockUser,
   unblockUser,
   agentApprovalByAdmin,
+  suspendAgent,
   updatePassword,
   createAdmin,
 };
