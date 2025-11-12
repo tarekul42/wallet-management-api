@@ -2,10 +2,10 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-interface EnvConfig {
+interface EnvVariables {
   PORT: number;
   DB_URL: string;
-  NODE_ENV: "development" | "production";
+  NODE_ENV: string;
   BCRYPT_SALT_ROUND: number;
   JWT_ACCESS_SECRET: string;
   JWT_ACCESS_EXPIRES: string;
@@ -16,7 +16,7 @@ interface EnvConfig {
   EXPRESS_SESSION_SECRET: string;
 }
 
-const loadEnvVariables = (): EnvConfig => {
+const loadEnvVariables = (): EnvVariables => {
   const requiredEnvVariables: string[] = [
     "PORT",
     "DB_URL",
@@ -33,18 +33,18 @@ const loadEnvVariables = (): EnvConfig => {
 
   requiredEnvVariables.forEach((key) => {
     if (!process.env[key]) {
-      throw new Error(`Missing required environment variable ${key}`);
+      throw new Error(`Missing environment variable: ${key}`);
     }
   });
 
   const port = Number(process.env.PORT);
   if (isNaN(port)) {
-    throw new Error("Invalid PORT environment variable");
+    throw new Error(`Invalid environment variable: PORT`);
   }
 
   const bcryptSaltRound = Number(process.env.BCRYPT_SALT_ROUND);
   if (isNaN(bcryptSaltRound)) {
-    throw new Error("Invalid BCRYPT_SALT_ROUND environment variable");
+    throw new Error(`Invalid environment variable: BCRYPT_SALT_ROUND`);
   }
 
   return {
