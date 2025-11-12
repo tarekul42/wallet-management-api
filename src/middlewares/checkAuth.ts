@@ -6,7 +6,7 @@ import { verifyToken } from "../utils/jwt";
 import { JwtPayload } from "jsonwebtoken";
 import { User } from "../modules/user/user.model";
 import { IsActive } from "../modules/user/user.interface";
-import { catchAsync } from "../utils/catchAsync";
+import catchAsync from "../utils/catchAsync";
 
 const checkAuth = (...authRoles: string[]) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {

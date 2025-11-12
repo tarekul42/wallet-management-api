@@ -3,8 +3,8 @@ import { NextFunction, Request, Response } from "express";
 import httpStatus from "http-status-codes";
 import passport from "passport";
 import AppError from "../../errorHelpers/AppError";
-import { sendResponse } from "../../utils/sendResponse";
-import { catchAsync } from "../../utils/catchAsync";
+import sendResponse from "../../utils/sendResponse";
+import catchAsync from "../../utils/catchAsync";
 import setAuthCookie from "../../utils/setCookie";
 import { createUserTokens } from "../../utils/userTokens";
 import { IUser } from "../user/user.interface";
@@ -20,7 +20,7 @@ const credentialsLogin = catchAsync(
       async (
         err: Error | null,
         user: (IUser & Document) | false,
-        info: { message: string }
+        info: { message: string },
       ) => {
         if (err) {
           return next(new AppError(401, err.message));
@@ -48,9 +48,9 @@ const credentialsLogin = catchAsync(
             user: rest,
           },
         });
-      }
+      },
     )(req, res, next);
-  }
+  },
 );
 
 const registerUser = catchAsync(async (req: Request, res: Response) => {
@@ -65,33 +65,13 @@ const registerUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const verifyEmail = catchAsync(async (req: Request, res: Response) => {
-  const { token } = req.query;
-
-  if (!token) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      "Verification token is required."
-    );
-  }
-
-  const result = await AuthServices.verifyEmail(token as string);
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: result.message,
-    data: null,
-  });
-});
-
 const logoutUser = catchAsync(async (req: Request, res: Response) => {
   const { refreshToken } = req.cookies;
 
   if (!refreshToken) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
-      "Refresh token not found in cookies."
+      "Refresh token not found in cookies.",
     );
   }
 
@@ -115,11 +95,11 @@ const getNewAccessToken = catchAsync(
     if (!refreshToken) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        "No refresh token received from cookies"
+        "No refresh token received from cookies",
       );
     }
     const tokenInfo = await AuthServices.getNewAccessToken(
-      refreshToken as string
+      refreshToken as string,
     );
 
     setAuthCookie(res, tokenInfo);
@@ -130,13 +110,12 @@ const getNewAccessToken = catchAsync(
       message: "New Access Token Retrived Successfully",
       data: tokenInfo,
     });
-  }
+  },
 );
 
 export const AuthControllers = {
   credentialsLogin,
   getNewAccessToken,
   registerUser,
-  verifyEmail,
   logoutUser,
 };
