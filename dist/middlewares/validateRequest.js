@@ -9,22 +9,18 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const validateRequest = (schema) => (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+exports.validateRequest = void 0;
+const validateRequest = (zodSchema) => (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const parsed = yield schema.parseAsync({
-            body: req.body,
-            query: req.query,
-            params: req.params,
-            cookies: req.cookies,
-        });
-        req.body = parsed.body;
-        req.query = parsed.query;
-        req.params = parsed.params;
-        req.cookies = parsed.cookies;
+        // req.body =JSON.parse(req.body.data || {}) || req.body
+        if (req.body.data && typeof req.body.data === "string") {
+            req.body = JSON.parse(req.body.data);
+        }
+        req.body = yield zodSchema.parseAsync(req.body);
         next();
     }
     catch (error) {
         next(error);
     }
 });
-exports.default = validateRequest;
+exports.validateRequest = validateRequest;

@@ -7,6 +7,7 @@ import { Wallet } from "../wallet/wallet.model";
 import { WalletStatus } from "../wallet/wallet.interface";
 import { createUserAndWallet } from "./user.helpers";
 import bcrypt from "bcryptjs";
+import { notifyAgentApproved, notifyAgentSuspended } from "../../utils/notification.utils";
 
 // Service to get a user's own profile
 const getMyProfile = async (userId: string) => {
@@ -191,6 +192,16 @@ const agentApprovalByAdmin = async (
 
   await agent.save();
 
+  // Send notification for approved agents
+  if (payload.approvalStatus === ApprovalStatus.APPROVED) {
+    notifyAgentApproved({
+      userId: agent._id.toString(),
+      email: agent.email,
+      name: agent.name,
+      commissionRate: agent.commissionRate || 0,
+    });
+  }
+
   return agent;
 };
 
@@ -230,6 +241,23 @@ const suspendAgent = async (
   }
 
   await agent.save();
+
+  // Send notification
+  if (newStatus === ApprovalStatus.SUSPENDED) {
+    notifyAgentSuspended({
+      userId: agent._id.toString(),
+      email: agent.email,
+      name: agent.name,
+    });
+  } else if (newStatus === ApprovalStatus.APPROVED) {
+    notifyAgentApproved({
+      userId: agent._id.toString(),
+      email: agent.email,
+      name: agent.name,
+      commissionRate: agent.commissionRate || 0,
+    });
+  }
+
   return agent;
 };
 

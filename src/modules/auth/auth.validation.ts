@@ -68,7 +68,31 @@ const loginUserValidationSchema = z.object({
   }),
 });
 
+const verifyEmailValidationSchema = z.object({
+  body: z.object({
+    token: z.string().min(1, "Verification token is required"),
+  }),
+});
+
+const forgotPasswordValidationSchema = z.object({
+  body: z.object({
+    email: z.string().min(1, "Email is required").email("Invalid email address"),
+  }),
+});
+
+const resetPasswordValidationSchema = z.object({
+  body: z.object({
+    token: z.string().min(1, "Token is required"),
+    newPassword: z
+      .string()
+      .min(6, "Password must be at least 6 characters long"),
+  }),
+});
+
 export const AuthValidations = {
   registerUserValidationSchema,
   loginUserValidationSchema,
+  verifyEmailValidationSchema,
+  forgotPasswordValidationSchema,
+  resetPasswordValidationSchema,
 };

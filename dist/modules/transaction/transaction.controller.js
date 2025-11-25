@@ -41,59 +41,63 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TransactionControllers = void 0;
 const http_status_codes_1 = __importStar(require("http-status-codes"));
-const catchAsync_1 = require("../../utils/catchAsync");
-const sendResponse_1 = require("../../utils/sendResponse");
+const catchAsync_1 = __importDefault(require("../../utils/catchAsync"));
+const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
 const transaction_service_1 = require("./transaction.service");
-const sendMoney = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { amount, receiverEmail } = req.body;
+const sendMoney = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { amount, receiverEmail, description } = req.body;
     const user = req.user;
-    const result = yield transaction_service_1.TransactionServices.sendMoney(user.userId, receiverEmail, amount);
-    (0, sendResponse_1.sendResponse)(res, {
+    const result = yield transaction_service_1.TransactionServices.sendMoney(user.userId, receiverEmail, amount, description);
+    (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_codes_1.default.OK,
         message: result.message,
-        data: result,
+        data: null, // No extra data needed, message is sufficient
     });
 }));
-const addMoney = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const addMoney = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { amount, receiverId } = req.body;
     const user = req.user;
     const result = yield transaction_service_1.TransactionServices.addMoney(user.userId, amount, receiverId);
-    (0, sendResponse_1.sendResponse)(res, {
+    (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_codes_1.default.OK,
         message: result.message,
-        data: result,
+        data: result, // No extra data needed, message is sufficient
     });
 }));
-const withdrawMoney = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const withdrawMoney = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { amount, fromId } = req.body;
     const user = req.user;
     const result = yield transaction_service_1.TransactionServices.withdrawMoney(user.userId, amount, fromId);
-    (0, sendResponse_1.sendResponse)(res, {
+    (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_codes_1.default.OK,
         message: result.message,
-        data: result,
+        data: null, // No extra data needed, message is sufficient
     });
 }));
-const viewHistory = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { userId } = req.params;
-    const result = yield transaction_service_1.TransactionServices.viewHistory(userId, req.query);
-    (0, sendResponse_1.sendResponse)(res, {
+const viewHistory = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    // CRITICAL FIX: Use the authenticated user's ID from the JWT, not from params.
+    const user = req.user;
+    const result = yield transaction_service_1.TransactionServices.viewHistory(user.userId, req.query);
+    (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_codes_1.StatusCodes.OK,
         message: "Transaction history retrieved successfully",
         data: result,
     });
 }));
-const getCommissionHistory = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getCommissionHistory = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
-    const result = yield transaction_service_1.TransactionServices.getCommissionHistory(user.userId);
-    (0, sendResponse_1.sendResponse)(res, {
+    const result = yield transaction_service_1.TransactionServices.getCommissionHistory(user.userId, req.query);
+    (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_codes_1.default.OK,
         message: "Commission history retrieved successfully",

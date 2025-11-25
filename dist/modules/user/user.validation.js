@@ -59,12 +59,12 @@ exports.updatePasswordZodSchema = zod_1.z
 // This avoids a dual-purpose schema that can be misleading about intent.
 exports.suspendAgentZodSchema = zod_1.z.object({
     body: zod_1.z.object({
-        status: zod_1.z.enum([user_interface_1.ApprovalStatus.SUSPENDED]),
+        status: zod_1.z.literal(user_interface_1.ApprovalStatus.SUSPENDED),
     }),
 });
 exports.approveAgentZodSchema = zod_1.z.object({
     body: zod_1.z.object({
-        status: zod_1.z.enum([user_interface_1.ApprovalStatus.APPROVED]),
+        status: zod_1.z.literal(user_interface_1.ApprovalStatus.APPROVED),
     }),
 });
 exports.agentApprovalZodSchema = zod_1.z.object({

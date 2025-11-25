@@ -4,17 +4,20 @@ import { Role } from "../user/user.interface";
 import { AuthControllers } from "./auth.controller";
 import { AuthValidations } from "./auth.validation";
 import { validateRequest } from "../../middlewares/validateRequest";
+import { authLimiter } from "../../config/rateLimiter";
 
 const router = Router();
 
 router.post(
   "/register",
+  authLimiter,
   validateRequest(AuthValidations.registerUserValidationSchema),
   AuthControllers.registerUser,
 );
 
 router.post(
   "/login",
+  authLimiter,
   validateRequest(AuthValidations.loginUserValidationSchema),
   AuthControllers.credentialsLogin,
 );
@@ -26,5 +29,23 @@ router.post(
 );
 
 router.post("/refresh-token", AuthControllers.getNewAccessToken);
+
+router.post(
+  "/verify-email",
+  validateRequest(AuthValidations.verifyEmailValidationSchema),
+  AuthControllers.verifyEmail,
+);
+
+router.post(
+  "/forgot-password",
+  validateRequest(AuthValidations.forgotPasswordValidationSchema),
+  AuthControllers.forgotPassword,
+);
+
+router.post(
+  "/reset-password",
+  validateRequest(AuthValidations.resetPasswordValidationSchema),
+  AuthControllers.resetPassword,
+);
 
 export const AuthRoutes = router;

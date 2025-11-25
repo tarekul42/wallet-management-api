@@ -14,6 +14,7 @@ var IsActive;
     IsActive["INACTIVE"] = "INACTIVE";
     IsActive["BLOCKED"] = "BLOCKED";
 })(IsActive || (exports.IsActive = IsActive = {}));
+// this will be applied for agents only
 var ApprovalStatus;
 (function (ApprovalStatus) {
     ApprovalStatus["PENDING"] = "PENDING";

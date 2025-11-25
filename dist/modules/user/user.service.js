@@ -19,8 +19,10 @@ const user_model_1 = require("./user.model");
 const user_interface_1 = require("./user.interface");
 const mongoose_1 = __importDefault(require("mongoose"));
 const wallet_model_1 = require("../wallet/wallet.model");
+const wallet_interface_1 = require("../wallet/wallet.interface");
 const user_helpers_1 = require("./user.helpers");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const notification_utils_1 = require("../../utils/notification.utils");
 // Service to get a user's own profile
 const getMyProfile = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield user_model_1.User.findById(userId);
@@ -52,12 +54,18 @@ const updateMyProfile = (userId, payload) => __awaiter(void 0, void 0, void 0, f
 const getAllUsers = (query) => __awaiter(void 0, void 0, void 0, function* () {
     const filter = {};
     if (query.role) {
+        if (typeof query.role !== "string") {
+            throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Invalid role filter.");
+        }
         if (!Object.values(user_interface_1.Role).includes(query.role)) {
             throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Invalid role value");
         }
         filter.role = query.role;
     }
     if (query.approvalStatus) {
+        if (typeof query.approvalStatus !== "string") {
+            throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Invalid approvalStatus filter.");
+        }
         if (!Object.values(user_interface_1.ApprovalStatus).includes(query.approvalStatus)) {
             throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Invalid approvalStatus value");
         }
@@ -71,9 +79,10 @@ const updateUserStatus = (targetUserId, newStatus, currentUserId) => __awaiter(v
     if (!targetUser) {
         throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "Target user not found");
     }
+    // Only enforce these checks when attempting to BLOCK a user
     if (newStatus === user_interface_1.IsActive.BLOCKED) {
         if (!currentUserId) {
-            throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "currentUserId is required to block a user.");
+            throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Current user ID is required for blocking operations.");
         }
         if (currentUserId === targetUserId) {
             throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "You cannot block yourself.");
@@ -89,7 +98,9 @@ const updateUserStatus = (targetUserId, newStatus, currentUserId) => __awaiter(v
         targetUser.isActive = newStatus;
         updatedUser = yield targetUser.save({ session });
         if (targetUser.wallet) {
-            const walletStatus = newStatus === user_interface_1.IsActive.BLOCKED ? "BLOCKED" : "ACTIVE";
+            const walletStatus = newStatus === user_interface_1.IsActive.BLOCKED
+                ? wallet_interface_1.WalletStatus.BLOCKED
+                : wallet_interface_1.WalletStatus.ACTIVE;
             yield wallet_model_1.Wallet.findByIdAndUpdate(targetUser.wallet, { status: walletStatus }, { session });
         }
         yield session.commitTransaction();
@@ -136,6 +147,15 @@ const agentApprovalByAdmin = (userId, payload) => __awaiter(void 0, void 0, void
         agent.commissionRate = null;
     }
     yield agent.save();
+    // Send notification for approved agents
+    if (payload.approvalStatus === user_interface_1.ApprovalStatus.APPROVED) {
+        (0, notification_utils_1.notifyAgentApproved)({
+            userId: agent._id.toString(),
+            email: agent.email,
+            name: agent.name,
+            commissionRate: agent.commissionRate || 0,
+        });
+    }
     return agent;
 });
 const suspendAgent = (agentId, newStatus) => __awaiter(void 0, void 0, void 0, function* () {
@@ -159,6 +179,22 @@ const suspendAgent = (agentId, newStatus) => __awaiter(void 0, void 0, void 0, f
         agent.approvalStatus = user_interface_1.ApprovalStatus.APPROVED;
     }
     yield agent.save();
+    // Send notification
+    if (newStatus === user_interface_1.ApprovalStatus.SUSPENDED) {
+        (0, notification_utils_1.notifyAgentSuspended)({
+            userId: agent._id.toString(),
+            email: agent.email,
+            name: agent.name,
+        });
+    }
+    else if (newStatus === user_interface_1.ApprovalStatus.APPROVED) {
+        (0, notification_utils_1.notifyAgentApproved)({
+            userId: agent._id.toString(),
+            email: agent.email,
+            name: agent.name,
+            commissionRate: agent.commissionRate || 0,
+        });
+    }
     return agent;
 });
 const updatePassword = (userId, payload) => __awaiter(void 0, void 0, void 0, function* () {

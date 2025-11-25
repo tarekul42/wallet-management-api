@@ -49,14 +49,16 @@ const transactionSchema = new mongoose_1.Schema({
     description: {
         type: String,
     },
-    // createdAt is populated by Mongoose when `timestamps: true` is enabled.
-    // Define the path here to enforce immutability for audit purposes.
-    createdAt: {
-        type: Date,
-        immutable: true,
-    },
 }, {
     timestamps: true,
     versionKey: false,
 });
+// Add indexes for better query performance
+transactionSchema.index({ walletId: 1 });
+transactionSchema.index({ sender: 1 });
+transactionSchema.index({ receiver: 1 });
+transactionSchema.index({ status: 1 });
+transactionSchema.index({ createdAt: -1 });
+// Compound index for common query patterns
+transactionSchema.index({ walletId: 1, status: 1, createdAt: -1 });
 exports.Transaction = (0, mongoose_1.model)("Transaction", transactionSchema);

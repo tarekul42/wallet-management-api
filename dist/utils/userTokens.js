@@ -1,37 +1,4 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -45,18 +12,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createNewAccessTokenWithRefreshToken = exports.createUserTokens = void 0;
-const http_status_codes_1 = __importStar(require("http-status-codes"));
+exports.createNewAccessToken = exports.createUserTokens = void 0;
 const env_1 = require("../config/env");
-const AppError_1 = __importDefault(require("../errorHelpers/AppError"));
 const user_interface_1 = require("../modules/user/user.interface");
-const user_model_1 = require("../modules/user/user.model");
 const jwt_1 = require("./jwt");
+const user_model_1 = require("../modules/user/user.model");
+const AppError_1 = __importDefault(require("../errorHelpers/AppError"));
+const http_status_codes_1 = __importDefault(require("http-status-codes"));
 const createUserTokens = (user) => {
     const jwtPayload = {
         userId: user._id,
         email: user.email,
         role: user.role,
+        tokenVersion: user.tokenVersion,
     };
     const accessToken = (0, jwt_1.generateToken)(jwtPayload, env_1.envVars.JWT_ACCESS_SECRET, env_1.envVars.JWT_ACCESS_EXPIRES);
     const refreshToken = (0, jwt_1.generateToken)(jwtPayload, env_1.envVars.JWT_REFRESH_SECRET, env_1.envVars.JWT_REFRESH_EXPIRES);
@@ -66,7 +34,8 @@ const createUserTokens = (user) => {
     };
 };
 exports.createUserTokens = createUserTokens;
-const createNewAccessTokenWithRefreshToken = (refreshToken) => __awaiter(void 0, void 0, void 0, function* () {
+const createNewAccessToken = (refreshToken) => __awaiter(void 0, void 0, void 0, function* () {
+    // token verification
     let verifiedRefreshToken;
     try {
         verifiedRefreshToken = (0, jwt_1.verifyToken)(refreshToken, env_1.envVars.JWT_REFRESH_SECRET);
@@ -78,25 +47,26 @@ const createNewAccessTokenWithRefreshToken = (refreshToken) => __awaiter(void 0,
         throw err;
     }
     if (!verifiedRefreshToken.email) {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.UNAUTHORIZED, "Refresh token payload invalid");
+        throw new AppError_1.default(http_status_codes_1.default.UNAUTHORIZED, "Refresh token payload invalid");
     }
+    // verify user
     const isUserExist = yield user_model_1.User.findOne({ email: verifiedRefreshToken.email });
     if (!isUserExist) {
-        throw new AppError_1.default(http_status_codes_1.default.UNAUTHORIZED, "User does not exist");
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "User not found");
     }
     if (isUserExist.isActive === user_interface_1.IsActive.BLOCKED ||
         isUserExist.isActive === user_interface_1.IsActive.INACTIVE) {
-        throw new AppError_1.default(http_status_codes_1.default.UNAUTHORIZED, `User is ${isUserExist.isActive}`);
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, `User is ${isUserExist.isActive}`);
     }
     if (isUserExist.isDeleted) {
-        throw new AppError_1.default(http_status_codes_1.default.UNAUTHORIZED, "User is deleted");
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "User is deleted");
     }
     const jwtPayload = {
-        userId: isUserExist._id.toString(),
+        userId: isUserExist._id,
         email: isUserExist.email,
         role: isUserExist.role,
     };
     const accessToken = (0, jwt_1.generateToken)(jwtPayload, env_1.envVars.JWT_ACCESS_SECRET, env_1.envVars.JWT_ACCESS_EXPIRES);
     return accessToken;
 });
-exports.createNewAccessTokenWithRefreshToken = createNewAccessTokenWithRefreshToken;
+exports.createNewAccessToken = createNewAccessToken;

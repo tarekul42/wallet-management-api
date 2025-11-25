@@ -18,6 +18,7 @@ const AppError_1 = __importDefault(require("../../errorHelpers/AppError"));
 const user_model_1 = require("../user/user.model");
 const wallet_model_1 = require("./wallet.model");
 const wallet_interface_1 = require("./wallet.interface");
+const notification_utils_1 = require("../../utils/notification.utils");
 const getMyWallet = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield user_model_1.User.findById(userId);
     if (!user) {
@@ -32,7 +33,14 @@ const getMyWallet = (userId) => __awaiter(void 0, void 0, void 0, function* () {
 const getAllWallets = (query) => __awaiter(void 0, void 0, void 0, function* () {
     const filter = {};
     if (query.status) {
-        filter.status = query.status;
+        const status = query.status;
+        if (typeof query.status !== "string") {
+            throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Invalid wallet status.");
+        }
+        if (!Object.values(wallet_interface_1.WalletStatus).includes(status)) {
+            throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Invalid wallet status.");
+        }
+        filter.status = status;
     }
     const wallets = yield wallet_model_1.Wallet.find(filter);
     return wallets;
@@ -51,6 +59,24 @@ const updateWalletStatus = (walletId, status) => __awaiter(void 0, void 0, void 
     }
     wallet.status = status;
     yield wallet.save();
+    // Send notification
+    const user = yield user_model_1.User.findById(wallet.owner);
+    if (user) {
+        if (status === wallet_interface_1.WalletStatus.BLOCKED) {
+            (0, notification_utils_1.notifyWalletBlocked)({
+                userId: user._id.toString(),
+                email: user.email,
+                name: user.name,
+            });
+        }
+        else if (status === wallet_interface_1.WalletStatus.ACTIVE) {
+            (0, notification_utils_1.notifyWalletUnblocked)({
+                userId: user._id.toString(),
+                email: user.email,
+                name: user.name,
+            });
+        }
+    }
     return wallet;
 });
 const blockWallet = (walletId) => __awaiter(void 0, void 0, void 0, function* () {

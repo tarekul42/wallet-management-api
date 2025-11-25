@@ -22,16 +22,16 @@ const loadEnvVariables = () => {
     ];
     requiredEnvVariables.forEach((key) => {
         if (!process.env[key]) {
-            throw new Error(`Missing required environment variable ${key}`);
+            throw new Error(`Missing environment variable: ${key}`);
         }
     });
     const port = Number(process.env.PORT);
     if (isNaN(port)) {
-        throw new Error("Invalid PORT environment variable");
+        throw new Error(`Invalid environment variable: PORT`);
     }
     const bcryptSaltRound = Number(process.env.BCRYPT_SALT_ROUND);
     if (isNaN(bcryptSaltRound)) {
-        throw new Error("Invalid BCRYPT_SALT_ROUND environment variable");
+        throw new Error(`Invalid environment variable: BCRYPT_SALT_ROUND`);
     }
     return {
         PORT: port,

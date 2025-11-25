@@ -28,7 +28,7 @@ const createUserAndWallet = (userData, session) => __awaiter(void 0, void 0, voi
     const newWalletArr = yield wallet_model_1.Wallet.create([
         {
             owner: newUser._id,
-            balance: userData.role === "USER" || userData.role === "AGENT" ? 50 : 0, // Give initial balance to users and agents
+            balance: userData.role === "USER" || userData.role === "AGENT" ? 50 : 0,
         },
     ], { session });
     if (!newWalletArr.length) {

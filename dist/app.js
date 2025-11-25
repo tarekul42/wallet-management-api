@@ -5,30 +5,23 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
+const helmet_1 = __importDefault(require("helmet"));
+const rateLimiter_1 = require("./config/rateLimiter");
 const routes_1 = __importDefault(require("./routes"));
+const notFound_1 = __importDefault(require("./middlewares/notFound"));
+const globalErrorHandler_1 = __importDefault(require("./middlewares/globalErrorHandler"));
 const passport_1 = __importDefault(require("passport"));
 require("./config/passport");
-const notFound_1 = __importDefault(require("./middlewares/notFound"));
-const globalErrorHandler_1 = require("./middlewares/globalErrorHandler");
-const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const app = (0, express_1.default)();
-// Middlewares
-app.use(passport_1.default.initialize());
 app.use(express_1.default.json());
-app.use((0, cookie_parser_1.default)());
-app.use((0, cors_1.default)({
-    origin: `http://localhost:${process.env.PORT || 5000}`,
-    credentials: true,
-}));
-// Main router
+app.use((0, cors_1.default)());
+app.use((0, helmet_1.default)());
+app.use(rateLimiter_1.generalApiRateLimiter);
+app.use(passport_1.default.initialize());
 app.use("/api/v1", routes_1.default);
-// Health check
 app.get("/", (req, res) => {
-    res.status(200).json({
-        message: "Welcome to Wallet management api",
-    });
+    res.status(200).json({ message: "Welcome to the Wallet Management API!" });
 });
-// Error handlers
+app.use(globalErrorHandler_1.default);
 app.use(notFound_1.default);
-app.use(globalErrorHandler_1.globalErrorHandler);
 exports.default = app;

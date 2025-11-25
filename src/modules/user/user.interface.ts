@@ -37,6 +37,14 @@ export interface IUser {
   wallet?: Types.ObjectId;
   commissionRate?: number | null;
   approvalStatus?: ApprovalStatus;
+  tokenVersion?: number;
+  verificationToken?: string;
+  resetPasswordToken?: string;
+  // Transaction limit tracking
+  dailyTransactionTotal?: number;
+  monthlyTransactionTotal?: number;
+  lastDailyReset?: Date;
+  lastMonthlyReset?: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }

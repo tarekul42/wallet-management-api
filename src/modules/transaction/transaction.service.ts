@@ -12,6 +12,8 @@ import {
   TransactionType,
 } from "./transaction.interface";
 import { Role } from "../user/user.interface";
+import { checkAndUpdateTransactionLimits } from "./transaction.helpers";
+import { SystemConfigServices } from "../systemConfig/systemConfig.service";
 
 const MAX_PAGINATION_LIMIT = 100;
 
@@ -36,7 +38,7 @@ const _handleAgentCommission = async (
 
     if (isNaN(commissionRateNum) || commissionRateNum < 0) return;
 
-    const commission = transactionAmount * commissionRateNum;
+    const commission = transactionAmount * (commissionRateNum / 100);
     if (commission <= 0) return; // Don't process zero or negative commission
 
     // Add commission to agent's wallet
@@ -114,23 +116,23 @@ const sendMoney = async (
       );
     }
 
-    await checkDailyTransactionLimit(sender._id, amount, session);
+    // Check transaction limits (throws if exceeded)
+    await checkAndUpdateTransactionLimits(senderId, amount);
 
-    const fee = amount * transactionFeeRate;
-    const totalDeduction = amount + fee;
+    // Get system config for fee
+    const systemConfig = await SystemConfigServices.getSystemConfig();
+    const fee = systemConfig.sendMoneyFee || 0;
+    const totalAmount = amount + fee;
 
-    // Atomically check balance and decrement
+    // Decrement sender's balance
     const senderWalletUpdate = await Wallet.findOneAndUpdate(
-      {
-        _id: sender.wallet._id,
-        balance: { $gte: totalDeduction },
-      },
-      { $inc: { balance: -totalDeduction } },
+      { _id: sender.wallet._id, balance: { $gte: totalAmount } },
+      { $inc: { balance: -totalAmount } },
       { session },
     );
 
     if (!senderWalletUpdate) {
-      throw new AppError(StatusCodes.BAD_REQUEST, "Insufficient funds.");
+      throw new AppError(StatusCodes.BAD_REQUEST, "Insufficient funds");
     }
 
     // Increment receiver's balance
@@ -139,15 +141,6 @@ const sendMoney = async (
       { $inc: { balance: amount } },
       { session },
     );
-
-    // Add fee to system wallet
-    if (fee > 0) {
-      await Wallet.findByIdAndUpdate(
-        settings.systemWalletId,
-        { $inc: { balance: fee } },
-        { session },
-      );
-    }
 
     // Create transaction record
     await Transaction.create(
@@ -241,6 +234,36 @@ const addMoney = async (
       );
     }
 
+    // Check transaction limits for users (not agents)
+    if (actor.role === Role.USER) {
+      await checkAndUpdateTransactionLimits(actor._id.toString(), amount);
+    }
+
+    // Get system config for fee (Cash In is usually free, but we support it)
+    const systemConfig = await SystemConfigServices.getSystemConfig();
+    const feePercentage = (systemConfig.cashInFee || 0) / 100;
+    const fee = amount * feePercentage;
+    // Note: For Cash In, usually the receiver gets the full amount and the sender pays the fee + amount.
+    // Or it's free. Here we assume sender pays fee if any.
+    const totalAmount = amount + fee;
+
+
+    // If actor is AGENT, they are giving money to user, so debit agent's wallet
+    if (actor.role === Role.AGENT && actor.wallet) {
+      const agentWalletUpdate = await Wallet.findOneAndUpdate(
+        { _id: actor.wallet._id, balance: { $gte: totalAmount } },
+        { $inc: { balance: -totalAmount } },
+        { session },
+      );
+
+      if (!agentWalletUpdate) {
+        throw new AppError(
+          StatusCodes.BAD_REQUEST,
+          "Agent has insufficient funds to perform Cash In",
+        );
+      }
+    }
+
     await Wallet.findByIdAndUpdate(
       receiverWallet._id,
       { $inc: { balance: amount } },
@@ -254,7 +277,7 @@ const addMoney = async (
           sender: actor.role === Role.AGENT ? actor._id : undefined,
           receiver: receiverUser?._id,
           amount,
-          fee: 0,
+          fee,
           type: TransactionType.CASH_IN,
           status: TransactionStatus.SUCCESSFUL,
           referenceId: uuidv4(),
@@ -319,7 +342,6 @@ const withdrawMoney = async (
       fromUser = actor;
       fromWallet = actor.wallet; // Use populated wallet
       transactionType = TransactionType.WITHDRAW;
-      await checkDailyTransactionLimit(actor._id, amount, session);
     } else if (actor.role === Role.AGENT) {
       if (!fromId) {
         throw new AppError(
@@ -336,7 +358,6 @@ const withdrawMoney = async (
       }
       fromWallet = await Wallet.findOne({ owner: fromId }).session(session);
       transactionType = TransactionType.CASH_OUT;
-      await checkDailyTransactionLimit(fromUser._id, amount, session);
     } else {
       throw new AppError(StatusCodes.FORBIDDEN, "Admins cannot withdraw money");
     }
@@ -355,15 +376,30 @@ const withdrawMoney = async (
       );
     }
 
+    // Get system config for fee
+    const systemConfig = await SystemConfigServices.getSystemConfig();
+    const feePercentage = (systemConfig.withdrawFee || 0) / 100;
+    const fee = amount * feePercentage;
+    const totalAmount = amount + fee;
+
     // Atomically check balance and decrement
     const fromWalletUpdate = await Wallet.findOneAndUpdate(
       {
         _id: fromWallet._id,
-        balance: { $gte: amount },
+        balance: { $gte: totalAmount },
       },
-      { $inc: { balance: -amount } },
+      { $inc: { balance: -totalAmount } },
       { session },
     );
+
+    // If actor is AGENT (Cash Out), they receive the digital money
+    if (actor.role === Role.AGENT && actor.wallet) {
+      await Wallet.findByIdAndUpdate(
+        actor.wallet._id,
+        { $inc: { balance: amount } },
+        { session },
+      );
+    }
 
     if (!fromWalletUpdate) {
       throw new AppError(StatusCodes.BAD_REQUEST, "Insufficient funds.");
@@ -376,7 +412,7 @@ const withdrawMoney = async (
           sender: actor._id,
           receiver: fromUser._id, // Clarification: `receiver` is the owner of the debited wallet.
           amount,
-          fee: 0,
+          fee,
           type: transactionType,
           status: TransactionStatus.SUCCESSFUL,
           referenceId: uuidv4(),

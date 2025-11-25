@@ -13,7 +13,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TransactionServices = void 0;
-const dayjs_1 = __importDefault(require("dayjs"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const http_status_codes_1 = require("http-status-codes");
 const uuid_1 = require("uuid");
@@ -23,13 +22,21 @@ const wallet_model_1 = require("../wallet/wallet.model");
 const wallet_interface_1 = require("../wallet/wallet.interface");
 const transaction_model_1 = require("./transaction.model");
 const transaction_interface_1 = require("./transaction.interface");
-const system_settings_model_1 = require("../system-settings/system-settings.model");
 const user_interface_1 = require("../user/user.interface");
-const DAILY_TRANSACTION_LIMIT = 50000;
+const transaction_helpers_1 = require("./transaction.helpers");
+const systemConfig_service_1 = require("../systemConfig/systemConfig.service");
+const MAX_PAGINATION_LIMIT = 100;
 // Private helper to handle agent commission
 const _handleAgentCommission = (session, agent, transactionAmount, transactionType) => __awaiter(void 0, void 0, void 0, function* () {
-    if (agent.role === user_interface_1.Role.AGENT && agent.commissionRate && agent.wallet) {
-        const commission = transactionAmount * agent.commissionRate;
+    if (agent.role === user_interface_1.Role.AGENT &&
+        agent.commissionRate != null &&
+        agent.wallet) {
+        const commissionRateNum = parseFloat(String(agent.commissionRate));
+        if (isNaN(commissionRateNum) || commissionRateNum < 0)
+            return;
+        const commission = transactionAmount * (commissionRateNum / 100);
+        if (commission <= 0)
+            return; // Don't process zero or negative commission
         // Add commission to agent's wallet
         yield wallet_model_1.Wallet.findByIdAndUpdate(agent.wallet._id, { $inc: { balance: commission } }, { session });
         // Create commission transaction record
@@ -46,36 +53,13 @@ const _handleAgentCommission = (session, agent, transactionAmount, transactionTy
         ], { session });
     }
 });
-const checkDailyTransactionLimit = (userId, amount, session) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    const startOfDay = (0, dayjs_1.default)().startOf("day").toDate();
-    const result = yield transaction_model_1.Transaction.aggregate([
-        {
-            $match: {
-                sender: userId,
-                createdAt: { $gte: startOfDay },
-                type: { $in: [transaction_interface_1.TransactionType.SEND_MONEY, transaction_interface_1.TransactionType.WITHDRAW] },
-                status: transaction_interface_1.TransactionStatus.SUCCESSFUL,
-            },
-        },
-        {
-            $group: {
-                _id: null,
-                totalAmount: { $sum: "$amount" },
-            },
-        },
-    ]).session(session);
-    const totalToday = ((_a = result[0]) === null || _a === void 0 ? void 0 : _a.totalAmount) || 0;
-    if (totalToday + amount > DAILY_TRANSACTION_LIMIT) {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, `You have exceeded your daily transaction limit of ${DAILY_TRANSACTION_LIMIT}. You have already spent ${totalToday} today.`);
-    }
-});
 const sendMoney = (senderId, receiverEmail, amount, description) => __awaiter(void 0, void 0, void 0, function* () {
+    if (amount <= 0) {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Amount must be positive.");
+    }
     const session = yield mongoose_1.default.startSession();
     try {
         session.startTransaction();
-        const settings = yield system_settings_model_1.SystemSettings.findOne().session(session);
-        const transactionFeeRate = settings ? settings.transactionFee : 0.015; // Fallback to 1.5%
         const sender = yield user_model_1.User.findById(senderId)
             .populate("wallet")
             .session(session);
@@ -100,15 +84,20 @@ const sendMoney = (senderId, receiverEmail, amount, description) => __awaiter(vo
         if (receiver.wallet.status !== wallet_interface_1.WalletStatus.ACTIVE) {
             throw new AppError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, "Receiver's wallet is not active");
         }
-        yield checkDailyTransactionLimit(sender._id, amount, session);
-        const fee = amount * transactionFeeRate;
-        const totalDeduction = amount + fee;
-        if (sender.wallet.balance < totalDeduction) {
+        // Check transaction limits (throws if exceeded)
+        yield (0, transaction_helpers_1.checkAndUpdateTransactionLimits)(senderId, amount);
+        // Get system config for fee
+        const systemConfig = yield systemConfig_service_1.SystemConfigServices.getSystemConfig();
+        const fee = systemConfig.sendMoneyFee || 0;
+        const totalAmount = amount + fee;
+        // Decrement sender's balance
+        const senderWalletUpdate = yield wallet_model_1.Wallet.findOneAndUpdate({ _id: sender.wallet._id, balance: { $gte: totalAmount } }, { $inc: { balance: -totalAmount } }, { session });
+        if (!senderWalletUpdate) {
             throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Insufficient funds");
         }
-        yield wallet_model_1.Wallet.findByIdAndUpdate(sender.wallet._id, { $inc: { balance: -totalDeduction } }, { session });
+        // Increment receiver's balance
         yield wallet_model_1.Wallet.findByIdAndUpdate(receiver.wallet._id, { $inc: { balance: amount } }, { session });
-        const referenceId = (0, uuid_1.v4)();
+        // Create transaction record
         yield transaction_model_1.Transaction.create([
             {
                 walletId: sender.wallet._id,
@@ -118,7 +107,7 @@ const sendMoney = (senderId, receiverEmail, amount, description) => __awaiter(vo
                 fee,
                 type: transaction_interface_1.TransactionType.SEND_MONEY,
                 status: transaction_interface_1.TransactionStatus.SUCCESSFUL,
-                referenceId,
+                referenceId: (0, uuid_1.v4)(),
                 description,
             },
         ], { session });
@@ -137,6 +126,9 @@ const sendMoney = (senderId, receiverEmail, amount, description) => __awaiter(vo
     }
 });
 const addMoney = (actorId, amount, receiverId) => __awaiter(void 0, void 0, void 0, function* () {
+    if (amount <= 0) {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Amount must be positive.");
+    }
     const session = yield mongoose_1.default.startSession();
     try {
         session.startTransaction();
@@ -149,8 +141,9 @@ const addMoney = (actorId, amount, receiverId) => __awaiter(void 0, void 0, void
         let receiverWallet;
         let receiverUser;
         if (actor.role === user_interface_1.Role.USER) {
-            receiverWallet = yield wallet_model_1.Wallet.findOne({ owner: actor._id }).session(session);
+            // For self-top-up, the actor is the receiver, use the populated wallet
             receiverUser = actor;
+            receiverWallet = actor.wallet;
         }
         else if (actor.role === user_interface_1.Role.AGENT) {
             if (!receiverId) {
@@ -171,24 +164,45 @@ const addMoney = (actorId, amount, receiverId) => __awaiter(void 0, void 0, void
         if (receiverWallet.status !== wallet_interface_1.WalletStatus.ACTIVE) {
             throw new AppError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, "Receiver's wallet is not active");
         }
+        // Check transaction limits for users (not agents)
+        if (actor.role === user_interface_1.Role.USER) {
+            yield (0, transaction_helpers_1.checkAndUpdateTransactionLimits)(actor._id.toString(), amount);
+        }
+        // Get system config for fee (Cash In is usually free, but we support it)
+        const systemConfig = yield systemConfig_service_1.SystemConfigServices.getSystemConfig();
+        const feePercentage = (systemConfig.cashInFee || 0) / 100;
+        const fee = amount * feePercentage;
+        // Note: For Cash In, usually the receiver gets the full amount and the sender pays the fee + amount.
+        // Or it's free. Here we assume sender pays fee if any.
+        const totalAmount = amount + fee;
+        // If actor is AGENT, they are giving money to user, so debit agent's wallet
+        if (actor.role === user_interface_1.Role.AGENT && actor.wallet) {
+            const agentWalletUpdate = yield wallet_model_1.Wallet.findOneAndUpdate({ _id: actor.wallet._id, balance: { $gte: totalAmount } }, { $inc: { balance: -totalAmount } }, { session });
+            if (!agentWalletUpdate) {
+                throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Agent has insufficient funds to perform Cash In");
+            }
+        }
         yield wallet_model_1.Wallet.findByIdAndUpdate(receiverWallet._id, { $inc: { balance: amount } }, { session });
-        const referenceId = (0, uuid_1.v4)();
         yield transaction_model_1.Transaction.create([
             {
                 walletId: receiverWallet._id,
                 sender: actor.role === user_interface_1.Role.AGENT ? actor._id : undefined,
-                receiver: receiverUser._id,
+                receiver: receiverUser === null || receiverUser === void 0 ? void 0 : receiverUser._id,
                 amount,
-                fee: 0,
+                fee,
                 type: transaction_interface_1.TransactionType.CASH_IN,
                 status: transaction_interface_1.TransactionStatus.SUCCESSFUL,
-                referenceId,
+                referenceId: (0, uuid_1.v4)(),
                 description: "Cash in",
             },
         ], { session });
         yield _handleAgentCommission(session, actor, amount, "cash-in");
         yield session.commitTransaction();
-        return { message: "Money added successfully" };
+        const updatedWallet = yield wallet_model_1.Wallet.findById(receiverWallet._id).session(session);
+        return {
+            message: "Money added successfully",
+            wallet: updatedWallet,
+        };
     }
     catch (error) {
         yield session.abortTransaction();
@@ -202,6 +216,9 @@ const addMoney = (actorId, amount, receiverId) => __awaiter(void 0, void 0, void
     }
 });
 const withdrawMoney = (actorId, amount, fromId) => __awaiter(void 0, void 0, void 0, function* () {
+    if (amount <= 0) {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Amount must be positive.");
+    }
     const session = yield mongoose_1.default.startSession();
     try {
         session.startTransaction();
@@ -216,9 +233,8 @@ const withdrawMoney = (actorId, amount, fromId) => __awaiter(void 0, void 0, voi
         let transactionType;
         if (actor.role === user_interface_1.Role.USER) {
             fromUser = actor;
-            fromWallet = yield wallet_model_1.Wallet.findOne({ owner: fromUser._id }).session(session);
+            fromWallet = actor.wallet; // Use populated wallet
             transactionType = transaction_interface_1.TransactionType.WITHDRAW;
-            yield checkDailyTransactionLimit(actor._id, amount, session);
         }
         else if (actor.role === user_interface_1.Role.AGENT) {
             if (!fromId) {
@@ -240,22 +256,34 @@ const withdrawMoney = (actorId, amount, fromId) => __awaiter(void 0, void 0, voi
         if (fromWallet.status !== wallet_interface_1.WalletStatus.ACTIVE) {
             throw new AppError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, "Wallet to withdraw from is not active");
         }
-        if (fromWallet.balance < amount) {
-            throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Insufficient funds");
+        // Get system config for fee
+        const systemConfig = yield systemConfig_service_1.SystemConfigServices.getSystemConfig();
+        const feePercentage = (systemConfig.withdrawFee || 0) / 100;
+        const fee = amount * feePercentage;
+        const totalAmount = amount + fee;
+        // Atomically check balance and decrement
+        const fromWalletUpdate = yield wallet_model_1.Wallet.findOneAndUpdate({
+            _id: fromWallet._id,
+            balance: { $gte: totalAmount },
+        }, { $inc: { balance: -totalAmount } }, { session });
+        // If actor is AGENT (Cash Out), they receive the digital money
+        if (actor.role === user_interface_1.Role.AGENT && actor.wallet) {
+            yield wallet_model_1.Wallet.findByIdAndUpdate(actor.wallet._id, { $inc: { balance: amount } }, { session });
         }
-        yield wallet_model_1.Wallet.findByIdAndUpdate(fromWallet._id, { $inc: { balance: -amount } }, { session });
-        const referenceId = (0, uuid_1.v4)();
+        if (!fromWalletUpdate) {
+            throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Insufficient funds.");
+        }
         yield transaction_model_1.Transaction.create([
             {
                 walletId: fromWallet._id,
                 sender: actor._id,
-                receiver: fromUser._id, // In this context, receiver is the one whose money is withdrawn
+                receiver: fromUser._id, // Clarification: `receiver` is the owner of the debited wallet.
                 amount,
-                fee: 0,
+                fee,
                 type: transactionType,
                 status: transaction_interface_1.TransactionStatus.SUCCESSFUL,
-                referenceId,
-                description: "Withdrawal",
+                referenceId: (0, uuid_1.v4)(),
+                description: `Withdrawal by ${actor.role}`,
             },
         ], { session });
         yield _handleAgentCommission(session, actor, amount, "cash-out");
@@ -278,18 +306,16 @@ const viewHistory = (actorId, query) => __awaiter(void 0, void 0, void 0, functi
     if (!actor) {
         throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "User not found");
     }
-    const page = Number(query.page) || 1;
-    const limit = Number(query.limit) || 10;
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.min(MAX_PAGINATION_LIMIT, Math.max(1, Number(query.limit) || 10));
     const skip = (page - 1) * limit;
     const filter = {};
     if (actor.role === user_interface_1.Role.ADMIN) {
-        // Admins can see all transactions, but can filter by userId if provided
         if (typeof query.userId === "string") {
             filter.$or = [{ sender: query.userId }, { receiver: query.userId }];
         }
     }
     else {
-        // Users and Agents can only see their own transactions
         filter.$or = [{ sender: actor._id }, { receiver: actor._id }];
     }
     if (typeof query.type === "string") {
@@ -300,10 +326,7 @@ const viewHistory = (actorId, query) => __awaiter(void 0, void 0, void 0, functi
         const startDate = new Date(query.startDate);
         const endDate = new Date(query.endDate);
         if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-            filter.createdAt = {
-                $gte: startDate,
-                $lte: endDate,
-            };
+            filter.createdAt = { $gte: startDate, $lte: endDate };
         }
     }
     const transactions = yield transaction_model_1.Transaction.find(filter)
@@ -312,16 +335,11 @@ const viewHistory = (actorId, query) => __awaiter(void 0, void 0, void 0, functi
         .limit(limit);
     const total = yield transaction_model_1.Transaction.countDocuments(filter);
     return {
-        meta: {
-            page,
-            limit,
-            total,
-            totalPages: Math.ceil(total / limit),
-        },
+        meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
         data: transactions,
     };
 });
-const getCommissionHistory = (actorId) => __awaiter(void 0, void 0, void 0, function* () {
+const getCommissionHistory = (actorId, query) => __awaiter(void 0, void 0, void 0, function* () {
     const actor = yield user_model_1.User.findById(actorId);
     if (!actor) {
         throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "User not found");
@@ -329,15 +347,22 @@ const getCommissionHistory = (actorId) => __awaiter(void 0, void 0, void 0, func
     if (actor.role !== user_interface_1.Role.AGENT) {
         throw new AppError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, "Only agents can view commission history");
     }
-    const wallet = yield wallet_model_1.Wallet.findOne({ owner: actorId });
-    if (!wallet) {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "Wallet not found");
-    }
-    const transactions = yield transaction_model_1.Transaction.find({
-        walletId: wallet._id,
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.min(MAX_PAGINATION_LIMIT, Math.max(1, Number(query.limit) || 10));
+    const skip = (page - 1) * limit;
+    const filter = {
+        receiver: actor._id,
         type: transaction_interface_1.TransactionType.COMMISSION,
-    });
-    return transactions;
+    };
+    const transactions = yield transaction_model_1.Transaction.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+    const total = yield transaction_model_1.Transaction.countDocuments(filter);
+    return {
+        meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+        data: transactions,
+    };
 });
 exports.TransactionServices = {
     sendMoney,

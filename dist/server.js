@@ -15,66 +15,67 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
 const app_1 = __importDefault(require("./app"));
 const env_1 = require("./config/env");
-const logger_1 = __importDefault(require("./utils/logger"));
 let server;
+const gracefulShutdown = (signal, error) => __awaiter(void 0, void 0, void 0, function* () {
+    if (error) {
+        console.error(`\nReceived ${signal}. Server Shutting down due to error: `, error);
+    }
+    else {
+        console.info(`\nReceived ${signal}. Server Shutting down gracefully`);
+    }
+    setTimeout(() => {
+        console.warn("Shutdown timed out. Forcing exit.");
+        process.exit(1);
+    }, 10000).unref();
+    try {
+        // stop server from accepting new connections
+        if (server) {
+            yield new Promise((resolve, reject) => {
+                server.close((err) => {
+                    if (err) {
+                        return reject(err);
+                    }
+                    console.info("HTTP server closed.");
+                    resolve();
+                });
+            });
+        }
+        // close database connection
+        if (mongoose_1.default.connection.readyState === 1) {
+            yield mongoose_1.default.connection.close();
+            console.info("Database connection closed.");
+        }
+    }
+    catch (error) {
+        console.error(`Error during graceful shutdown: `, error);
+        process.exit(1);
+    }
+    process.exit(error ? 1 : 0);
+});
 const startServer = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         yield mongoose_1.default.connect(env_1.envVars.DB_URL);
-        logger_1.default.info("Connected to database!!");
+        console.info("Connected to MongoDB!");
         server = app_1.default.listen(env_1.envVars.PORT, () => {
-            logger_1.default.info(`Server is listening to port ${env_1.envVars.PORT}`);
+            console.info(`Server is listening to port ${env_1.envVars.PORT}`);
         });
     }
     catch (error) {
-        logger_1.default.error(error);
+        console.error("Failed to start server", error);
+        if (mongoose_1.default.connection.readyState === 1) {
+            yield mongoose_1.default.connection.close();
+        }
+        process.exit(1);
     }
 });
 (() => __awaiter(void 0, void 0, void 0, function* () {
     yield startServer();
 }))();
-process.on("SIGTERM", () => {
-    logger_1.default.info("SIGTERM signal received. Server shutting down...");
-    if (server) {
-        server.close(() => __awaiter(void 0, void 0, void 0, function* () {
-            logger_1.default.info("HTTP server closed.");
-            yield mongoose_1.default.connection.close();
-            logger_1.default.info("Database connection closed.");
-            process.exit(0);
-        }));
-    }
-    else {
-        process.exit(0);
-    }
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("unhandledRejection", (reason) => {
+    gracefulShutdown("unhandledRejection", reason);
 });
-process.on("SIGINT", () => {
-    logger_1.default.info("SIGINT signal received. Server shutting down.");
-    if (server) {
-        server.close(() => __awaiter(void 0, void 0, void 0, function* () {
-            logger_1.default.info("HTTP server closed.");
-            yield mongoose_1.default.connection.close();
-            logger_1.default.info("Database connection closed.");
-            process.exit(0);
-        }));
-    }
-    else {
-        process.exit(0);
-    }
-});
-process.on("unhandledRejection", (err) => {
-    logger_1.default.error("Unhandled rejection detected. Server shutting down.", err);
-    if (server) {
-        server.close(() => {
-            process.exit(1);
-        });
-    }
-    process.exit(1);
-});
-process.on("uncaughtException", (err) => {
-    logger_1.default.error("Uncaught exception detected. Server shutting down.", err);
-    if (server) {
-        server.close(() => {
-            process.exit(1);
-        });
-    }
-    process.exit(1);
+process.on("uncaughtException", (error) => {
+    gracefulShutdown("uncaughtException", error);
 });

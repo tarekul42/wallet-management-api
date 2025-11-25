@@ -83,6 +83,34 @@ const userSchema = new mongoose_1.Schema({
             return this.role === user_interface_1.Role.AGENT;
         },
     },
+    tokenVersion: {
+        type: Number,
+        default: 0,
+    },
+    verificationToken: {
+        type: String,
+        select: false,
+    },
+    resetPasswordToken: {
+        type: String,
+        select: false,
+    },
+    dailyTransactionTotal: {
+        type: Number,
+        default: 0,
+    },
+    monthlyTransactionTotal: {
+        type: Number,
+        default: 0,
+    },
+    lastDailyReset: {
+        type: Date,
+        default: Date.now,
+    },
+    lastMonthlyReset: {
+        type: Date,
+        default: Date.now,
+    },
 }, {
     timestamps: true,
     versionKey: false,

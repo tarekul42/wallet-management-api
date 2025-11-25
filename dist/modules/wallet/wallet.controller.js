@@ -8,55 +8,59 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WalletControllers = void 0;
 const http_status_codes_1 = require("http-status-codes");
-const catchAsync_1 = require("../../utils/catchAsync");
+const catchAsync_1 = __importDefault(require("../../utils/catchAsync"));
 const wallet_service_1 = require("./wallet.service");
-const sendResponse_1 = require("../../utils/sendResponse");
-const getMyWallet = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { userId } = req.body;
-    const result = yield wallet_service_1.WalletServices.getMyWallet(userId);
-    (0, sendResponse_1.sendResponse)(res, {
+const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
+const getMyWallet = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    // The checkAuth middleware ensures req.user exists and has a userId.
+    const user = req.user;
+    const result = yield wallet_service_1.WalletServices.getMyWallet(user.userId);
+    (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_codes_1.StatusCodes.OK,
         message: "Wallet retrieved successfully",
         data: result,
     });
 }));
-const getAllWallets = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getAllWallets = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield wallet_service_1.WalletServices.getAllWallets(req.query);
-    (0, sendResponse_1.sendResponse)(res, {
+    (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_codes_1.StatusCodes.OK,
         message: "Wallets retrieved successfully",
         data: result,
     });
 }));
-const getSingleWallet = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getSingleWallet = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield wallet_service_1.WalletServices.getSingleWallet(id);
-    (0, sendResponse_1.sendResponse)(res, {
+    (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_codes_1.StatusCodes.OK,
         message: "Wallet retrieved successfully",
         data: result,
     });
 }));
-const blockWallet = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const blockWallet = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield wallet_service_1.WalletServices.blockWallet(id);
-    (0, sendResponse_1.sendResponse)(res, {
+    (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_codes_1.StatusCodes.OK,
         message: "Wallet blocked successfully",
         data: result,
     });
 }));
-const unblockWallet = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const unblockWallet = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield wallet_service_1.WalletServices.unblockWallet(id);
-    (0, sendResponse_1.sendResponse)(res, {
+    (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_codes_1.StatusCodes.OK,
         message: "Wallet unblocked successfully",

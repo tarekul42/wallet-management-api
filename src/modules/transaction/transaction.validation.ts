@@ -13,10 +13,8 @@ const objectIdValidation = z
   .regex(/^[0-9a-fA-F]{24}$/, { message: "Invalid ID format." });
 
 const sendMoneyValidationSchema = z.object({
-  body: z.object({
-    amount: amountValidation,
-    receiverEmail: z.string().email("Invalid email address."),
-  }),
+  amount: amountValidation,
+  receiverEmail: z.string().email("Invalid email address."),
 });
 
 const addMoneyValidationSchema = z.object({
@@ -25,10 +23,8 @@ const addMoneyValidationSchema = z.object({
 });
 
 const withdrawMoneyValidationSchema = z.object({
-  body: z.object({
-    amount: amountValidation,
-    fromId: objectIdValidation.optional(),
-  }),
+  amount: amountValidation,
+  fromId: objectIdValidation.optional(),
 });
 
 export {
