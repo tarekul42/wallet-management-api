@@ -8,7 +8,6 @@ import { systemConfigUpdateLimiter } from "../../config/rateLimiter";
 
 const router = Router();
 
-
 /**
  * Get current system configuration
  * Public endpoint - anyone can view current settings
