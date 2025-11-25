@@ -4,6 +4,7 @@ import AppError from "../../errorHelpers/AppError";
 import { User } from "../user/user.model";
 import { Wallet } from "./wallet.model";
 import { IWallet, WalletStatus } from "./wallet.interface";
+import { notifyWalletBlocked, notifyWalletUnblocked } from "../../utils/notification.utils";
 
 const getMyWallet = async (userId: string) => {
   const user = await User.findById(userId);
@@ -58,6 +59,25 @@ const updateWalletStatus = async (walletId: string, status: WalletStatus) => {
   }
   wallet.status = status;
   await wallet.save();
+
+  // Send notification
+  const user = await User.findById(wallet.owner);
+  if (user) {
+    if (status === WalletStatus.BLOCKED) {
+      notifyWalletBlocked({
+        userId: user._id.toString(),
+        email: user.email,
+        name: user.name,
+      });
+    } else if (status === WalletStatus.ACTIVE) {
+      notifyWalletUnblocked({
+        userId: user._id.toString(),
+        email: user.email,
+        name: user.name,
+      });
+    }
+  }
+
   return wallet;
 };
 

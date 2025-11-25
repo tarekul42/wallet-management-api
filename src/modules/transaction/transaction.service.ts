@@ -23,7 +23,7 @@ const MAX_PAGINATION_LIMIT = 100;
 const checkAndUpdateTransactionLimits = async (
   userId: string,
   amount: number,
-  session: ClientSession,
+  session?: ClientSession,
 ) => {
   const config = await SystemConfigServices.getSystemConfig();
 
@@ -34,13 +34,17 @@ const checkAndUpdateTransactionLimits = async (
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
 
-  // Calculate daily total
-  const dailyTransactions = await Transaction.find({
+  const filterBase = {
     sender: { $eq: String(userId) },
     status: { $eq: TransactionStatus.SUCCESSFUL },
-    createdAt: { $gte: startOfDay },
     type: { $in: [TransactionType.SEND_MONEY, TransactionType.CASH_OUT, TransactionType.WITHDRAW] },
-  }).session(session);
+  };
+
+  // Calculate daily total
+  const dailyTransactions = await Transaction.find({
+    ...filterBase,
+    createdAt: { $gte: startOfDay },
+  }).session(session || null);
 
   const dailyTotal = dailyTransactions.reduce((sum, t) => sum + t.amount, 0);
 
@@ -53,11 +57,9 @@ const checkAndUpdateTransactionLimits = async (
 
   // Calculate monthly total
   const monthlyTransactions = await Transaction.find({
-    sender: { $eq: String(userId) },
-    status: { $eq: TransactionStatus.SUCCESSFUL },
+    ...filterBase,
     createdAt: { $gte: startOfMonth },
-    type: { $in: [TransactionType.SEND_MONEY, TransactionType.CASH_OUT, TransactionType.WITHDRAW] },
-  }).session(session);
+  }).session(session || null);
 
   const monthlyTotal = monthlyTransactions.reduce((sum, t) => sum + t.amount, 0);
 
@@ -92,13 +94,12 @@ const _handleAgentCommission = async (
     if (isNaN(commissionRateNum) || commissionRateNum < 0) return;
 
     // Use the stored rate directly (e.g., 0.02 for 2%)
-    // This maintains consistency with how it's stored in agentApprovalByAdmin
     const commission = transactionAmount * commissionRateNum;
     if (commission <= 0) return;
 
     // Add commission to agent's wallet
-    await Wallet.findByIdAndUpdate(
-      { $eq: String(agent.wallet._id) },
+    await Wallet.findOneAndUpdate(
+      { _id: { $eq: String(agent.wallet._id) } },
       { $inc: { balance: commission } },
       { session },
     );
@@ -310,9 +311,9 @@ const addMoney = async (
       const agentWalletUpdate = await Wallet.findOneAndUpdate(
         {
           _id: { $eq: String(actor.wallet?._id) },
-          balance: { $gte: totalDeduction },
+          balance: { $gte: totalDeduction + fee },
         },
-        { $inc: { balance: -totalDeduction } },
+        { $inc: { balance: -(totalDeduction + fee) } },
         { session },
       );
 

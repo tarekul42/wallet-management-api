@@ -205,6 +205,16 @@ const agentApprovalByAdmin = async (
 
   await agent.save();
 
+  // Send notification for approved agents
+  if (payload.approvalStatus === ApprovalStatus.APPROVED) {
+    notifyAgentApproved({
+      userId: agent._id.toString(),
+      email: agent.email,
+      name: agent.name,
+      commissionRate: agent.commissionRate || 0,
+    });
+  }
+
   return agent;
 };
 
@@ -252,6 +262,23 @@ const suspendAgent = async (
   }
 
   await agent.save();
+
+  // Send notification
+  if (newStatus === ApprovalStatus.SUSPENDED) {
+    notifyAgentSuspended({
+      userId: agent._id.toString(),
+      email: agent.email,
+      name: agent.name,
+    });
+  } else if (newStatus === ApprovalStatus.APPROVED) {
+    notifyAgentApproved({
+      userId: agent._id.toString(),
+      email: agent.email,
+      name: agent.name,
+      commissionRate: agent.commissionRate || 0,
+    });
+  }
+
   return agent;
 };
 

@@ -70,11 +70,39 @@ const userSchema = new Schema<IUser>(
         return this.role === Role.AGENT;
       },
     },
+    tokenVersion: {
+      type: Number,
+      default: 0,
+    },
+    verificationToken: {
+      type: String,
+      select: false,
+    },
+    resetPasswordToken: {
+      type: String,
+      select: false,
+    },
+    dailyTransactionTotal: {
+      type: Number,
+      default: 0,
+    },
+    monthlyTransactionTotal: {
+      type: Number,
+      default: 0,
+    },
+    lastDailyReset: {
+      type: Date,
+      default: Date.now,
+    },
+    lastMonthlyReset: {
+      type: Date,
+      default: Date.now,
+    },
   },
   {
     timestamps: true,
     versionKey: false,
-  }
+  },
 );
 
 // Hash password before saving
@@ -82,7 +110,7 @@ userSchema.pre("save", async function (next) {
   if (this.isModified("password")) {
     this.password = await bcrypt.hash(
       this.password,
-      Number(envVars.BCRYPT_SALT_ROUND)
+      Number(envVars.BCRYPT_SALT_ROUND),
     );
   }
   next();

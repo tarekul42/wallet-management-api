@@ -27,6 +27,7 @@ const createLimiter = (max: number, windowMs: number = 15 * 60 * 1000, message =
 
 // General API limiter
 export const apiLimiter = createLimiter(100);
+export const generalApiRateLimiter = apiLimiter; // for compatibility
 
 // Authentication limiter (stricter)
 export const authLimiter = createLimiter(20);
