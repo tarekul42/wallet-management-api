@@ -196,7 +196,14 @@ const updatePassword = async (userId: string, payload: any) => {
 };
 
 const createAdmin = async (payload: IUser) => {
-  const user = await User.findOne({ email: payload.email });
+  if (typeof payload.email !== "string") {
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      "Invalid email format.",
+    );
+  }
+
+  const user = await User.findOne({ email: { $eq: payload.email } });
 
   if (user) {
     throw new AppError(
