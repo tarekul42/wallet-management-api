@@ -76,6 +76,13 @@ const sendMoney = async (
     throw new AppError(StatusCodes.BAD_REQUEST, "Amount must be positive.");
   }
 
+  if (typeof receiverEmail !== "string") {
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      "Receiver email must be a valid string.",
+    );
+  }
+
   const session = await mongoose.startSession();
 
   try {
