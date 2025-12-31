@@ -14,7 +14,6 @@ import { adminActionLimiter, selfActionLimiter } from "../../config/rateLimiter"
 
 const router = Router();
 
-
 router.get(
   "/me",
   selfActionLimiter,
