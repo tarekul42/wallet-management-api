@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from "express";
-import { ZodObject } from "zod";
+import { ZodTypeAny } from "zod";
 
 export const validateRequest =
-  (zodSchema: ZodObject) =>
+  (zodSchema: ZodTypeAny) =>
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         // req.body =JSON.parse(req.body.data || {}) || req.body
