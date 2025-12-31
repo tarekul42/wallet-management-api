@@ -8,40 +8,39 @@ const router = Router();
 
 router.use(walletActionLimiter);
 
-
 router.get(
   "/me",
   walletActionLimiter,
   checkAuth(Role.USER, Role.AGENT, Role.SUPER_ADMIN),
-  WalletControllers.getMyWallet
+  WalletControllers.getMyWallet,
 );
 
 router.get(
   "/",
   walletActionLimiter,
   checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
-  WalletControllers.getAllWallets
+  WalletControllers.getAllWallets,
 );
 
 router.get(
   "/:id",
   walletActionLimiter,
   checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
-  WalletControllers.getSingleWallet
+  WalletControllers.getSingleWallet,
 );
 
 router.patch(
   "/:id/block",
   walletActionLimiter,
   checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
-  WalletControllers.blockWallet
+  WalletControllers.blockWallet,
 );
 
 router.patch(
   "/:id/unblock",
   walletActionLimiter,
   checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
-  WalletControllers.unblockWallet
+  WalletControllers.unblockWallet,
 );
 
 export const WalletRoutes = router;
