@@ -28,16 +28,18 @@ const getAllWallets = async (
   const filter: mongoose.FilterQuery<IWallet> = {};
 
   if (query.status) {
-    const status = query.status as string;
-
     if (typeof query.status !== "string") {
       throw new AppError(StatusCodes.BAD_REQUEST, "Invalid wallet status.");
     }
 
-    if (!Object.values(WalletStatus).includes(status as WalletStatus)) {
+    const rawStatus = query.status as string;
+
+    if (!Object.values(WalletStatus).includes(rawStatus as WalletStatus)) {
       throw new AppError(StatusCodes.BAD_REQUEST, "Invalid wallet status.");
     }
-    filter.status = status;
+
+    const validatedStatus = rawStatus as WalletStatus;
+    filter.status = validatedStatus;
   }
 
   const wallets = await Wallet.find(filter);
