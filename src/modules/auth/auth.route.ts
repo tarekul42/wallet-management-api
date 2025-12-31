@@ -65,12 +65,14 @@ router.post(
 
 router.post(
   "/forgot-password",
+  authLimiter,
   validateRequest(AuthValidations.forgotPasswordValidationSchema),
   AuthControllers.forgotPassword,
 );
 
 router.post(
   "/reset-password",
+  authLimiter,
   validateRequest(AuthValidations.resetPasswordValidationSchema),
   AuthControllers.resetPassword,
 );
