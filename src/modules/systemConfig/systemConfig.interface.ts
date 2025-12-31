@@ -8,6 +8,7 @@ export interface ISystemConfig {
     sendMoneyFee: number;
     cashInFee: number;
     withdrawFee: number;
+    cashOutFee: number;
 
     // Agent commission rates (percentage)
     agentCommissionRate: number;
@@ -18,6 +19,9 @@ export interface ISystemConfig {
 
     // Minimum balance requirements
     minBalance: number;
+
+    // Recipient for system fees
+    systemWalletId: string;
 
     // Timestamps
     createdAt?: Date;

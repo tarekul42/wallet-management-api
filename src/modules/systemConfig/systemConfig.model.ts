@@ -23,6 +23,11 @@ const systemConfigSchema = new Schema<ISystemConfig>(
             default: 1.5, // 1.5% or flat
             min: 0,
         },
+        cashOutFee: {
+            type: Number,
+            default: 1.5, // 1.5% or flat
+            min: 0,
+        },
         agentCommissionRate: {
             type: Number,
             default: 2, // 2%
@@ -42,6 +47,10 @@ const systemConfigSchema = new Schema<ISystemConfig>(
             type: Number,
             default: 0,
             min: 0,
+        },
+        systemWalletId: {
+            type: String,
+            default: "6773dccc94154fa7218683e3", // Default system wallet ID
         },
     },
     {

@@ -48,10 +48,10 @@ const checkAndUpdateTransactionLimits = async (
 
   const dailyTotal = dailyTransactions.reduce((sum, t) => sum + t.amount, 0);
 
-  if (dailyTotal + amount > config.dailyTransactionLimit) {
+  if (dailyTotal + amount > config.dailyLimit) {
     throw new AppError(
       StatusCodes.BAD_REQUEST,
-      `Daily transaction limit exceeded. Remaining: ${config.dailyTransactionLimit - dailyTotal}`,
+      `Daily transaction limit exceeded. Remaining: ${config.dailyLimit - dailyTotal}`,
     );
   }
 
@@ -63,10 +63,10 @@ const checkAndUpdateTransactionLimits = async (
 
   const monthlyTotal = monthlyTransactions.reduce((sum, t) => sum + t.amount, 0);
 
-  if (monthlyTotal + amount > config.monthlyTransactionLimit) {
+  if (monthlyTotal + amount > config.monthlyLimit) {
     throw new AppError(
       StatusCodes.BAD_REQUEST,
-      `Monthly transaction limit exceeded. Remaining: ${config.monthlyTransactionLimit - monthlyTotal}`,
+      `Monthly transaction limit exceeded. Remaining: ${config.monthlyLimit - monthlyTotal}`,
     );
   }
 };
@@ -204,16 +204,16 @@ const sendMoney = async (
     }
 
     // Increment receiver's balance
-    await Wallet.findByIdAndUpdate(
-      { $eq: String(receiver.wallet._id) },
+    await Wallet.findOneAndUpdate(
+      { _id: { $eq: String(receiver.wallet._id) } },
       { $inc: { balance: amount } },
       { session },
     );
 
     // Add fee to system wallet
     if (fee > 0) {
-      await Wallet.findByIdAndUpdate(
-        { $eq: String(config.systemWalletId) },
+      await Wallet.findOneAndUpdate(
+        { _id: { $eq: String(config.systemWalletId) } },
         { $inc: { balance: fee } },
         { session },
       );
@@ -342,8 +342,8 @@ const addMoney = async (
       }
     }
 
-    await Wallet.findByIdAndUpdate(
-      { $eq: String(receiverWallet._id) },
+    await Wallet.findOneAndUpdate(
+      { _id: { $eq: String(receiverWallet._id) } },
       { $inc: { balance: amount } },
       { session },
     );
@@ -366,7 +366,17 @@ const addMoney = async (
     );
 
     if (actor.role === Role.AGENT) {
-      await _handleAgentCommission(session, actor as any, amount, "cash-in");
+      await _handleAgentCommission(
+        session,
+        actor as unknown as {
+          role: Role;
+          _id: mongoose.Types.ObjectId;
+          commissionRate?: number | null;
+          wallet?: IWallet;
+        },
+        amount,
+        "cash-in",
+      );
     }
 
     await session.commitTransaction();
@@ -486,8 +496,8 @@ const withdrawMoney = async (
 
     // If it's a cash-out, add amount to agent wallet
     if (transactionType === TransactionType.CASH_OUT) {
-      await Wallet.findByIdAndUpdate(
-        { $eq: String(actor.wallet?._id) },
+      await Wallet.findOneAndUpdate(
+        { _id: { $eq: String(actor.wallet?._id) } },
         { $inc: { balance: amount } },
         { session },
       );
@@ -495,8 +505,8 @@ const withdrawMoney = async (
 
     // Add fee to system wallet
     if (fee > 0) {
-      await Wallet.findByIdAndUpdate(
-        { $eq: String(config.systemWalletId) },
+      await Wallet.findOneAndUpdate(
+        { _id: { $eq: String(config.systemWalletId) } },
         { $inc: { balance: fee } },
         { session },
       );
@@ -520,7 +530,17 @@ const withdrawMoney = async (
     );
 
     if (actor.role === Role.AGENT) {
-      await _handleAgentCommission(session, actor as any, amount, "cash-out");
+      await _handleAgentCommission(
+        session,
+        actor as unknown as {
+          role: Role;
+          _id: mongoose.Types.ObjectId;
+          commissionRate?: number | null;
+          wallet?: IWallet;
+        },
+        amount,
+        "cash-out",
+      );
     }
 
     await session.commitTransaction();
