@@ -33,16 +33,16 @@ const getMyProfile = (userId) => __awaiter(void 0, void 0, void 0, function* () 
 });
 const updateMyProfile = (userId, payload) => __awaiter(void 0, void 0, void 0, function* () {
     const updateData = {};
-    if (payload.name) {
-        updateData.name = payload.name;
+    if (payload.name && typeof payload.name === "string") {
+        updateData.name = payload.name.trim();
     }
-    if (payload.phone) {
-        updateData.phone = payload.phone;
+    if (payload.phone && typeof payload.phone === "string") {
+        updateData.phone = payload.phone.trim();
     }
     if (Object.keys(updateData).length === 0) {
         throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "No valid fields to update.");
     }
-    const result = yield user_model_1.User.findOneAndUpdate({ _id: { $eq: String(userId) } }, updateData, {
+    const result = yield user_model_1.User.findOneAndUpdate({ _id: { $eq: String(userId) } }, { $set: updateData }, {
         new: true,
         runValidators: true,
     });
@@ -101,7 +101,7 @@ const updateUserStatus = (targetUserId, newStatus, currentUserId) => __awaiter(v
             const walletStatus = newStatus === user_interface_1.IsActive.BLOCKED
                 ? wallet_interface_1.WalletStatus.BLOCKED
                 : wallet_interface_1.WalletStatus.ACTIVE;
-            yield wallet_model_1.Wallet.findOneAndUpdate({ _id: { $eq: targetUser.wallet } }, { status: walletStatus }, { session });
+            yield wallet_model_1.Wallet.findOneAndUpdate({ _id: { $eq: String(targetUser.wallet) } }, { $set: { status: walletStatus } }, { session });
         }
         yield session.commitTransaction();
     }
