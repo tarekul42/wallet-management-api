@@ -205,16 +205,6 @@ const agentApprovalByAdmin = async (
 
   await agent.save();
 
-  // Send notification for approved agents
-  if (payload.approvalStatus === ApprovalStatus.APPROVED) {
-    notifyAgentApproved({
-      userId: agent._id.toString(),
-      email: agent.email,
-      name: agent.name,
-      commissionRate: agent.commissionRate || 0,
-    });
-  }
-
   return agent;
 };
 
@@ -259,18 +249,8 @@ const suspendAgent = async (
       );
     }
     agent.approvalStatus = ApprovalStatus.APPROVED;
-  }
 
-  await agent.save();
-
-  // Send notification
-  if (newStatus === ApprovalStatus.SUSPENDED) {
-    notifyAgentSuspended({
-      userId: agent._id.toString(),
-      email: agent.email,
-      name: agent.name,
-    });
-  } else if (newStatus === ApprovalStatus.APPROVED) {
+    // Notify agent
     notifyAgentApproved({
       userId: agent._id.toString(),
       email: agent.email,
@@ -278,6 +258,8 @@ const suspendAgent = async (
       commissionRate: agent.commissionRate || 0,
     });
   }
+
+  await agent.save();
 
   return agent;
 };
@@ -318,7 +300,9 @@ const createAdmin = async (payload: IUser) => {
     );
   }
 
-  const user = await User.findOne({ email: { $eq: payload.email } });
+  const normalizedEmail = payload.email.trim().toLowerCase();
+
+  const user = await User.findOne({ email: { $eq: normalizedEmail } });
 
   if (user) {
     throw new AppError(
@@ -342,7 +326,7 @@ const createAdmin = async (payload: IUser) => {
 
     const adminData: Partial<IUser> = {
       name: payload.name,
-      email: payload.email,
+      email: normalizedEmail,
       password: payload.password,
       phone: payload.phone,
       role: payload.role,
