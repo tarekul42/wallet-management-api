@@ -20,11 +20,11 @@ const getMyProfile = async (userId: string) => {
 
 const updateMyProfile = async (userId: string, payload: Partial<IUser>) => {
   const updateData: Partial<IUser> = {};
-  if (payload.name) {
-    updateData.name = payload.name;
+  if (payload.name && typeof payload.name === "string") {
+    updateData.name = payload.name.trim();
   }
-  if (payload.phone) {
-    updateData.phone = payload.phone;
+  if (payload.phone && typeof payload.phone === "string") {
+    updateData.phone = payload.phone.trim();
   }
 
   if (Object.keys(updateData).length === 0) {
