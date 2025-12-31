@@ -39,10 +39,10 @@ export const adminActionLimiter = createLimiter(30, 1 * 60 * 1000);
 export const selfActionLimiter = createLimiter(60, 1 * 60 * 1000);
 
 // Transaction limiter
-export const transactionRateLimiter = createLimiter(20, 15 * 60 * 1000, "Too many transaction attempts. Please wait before trying again.");
+export const transactionRateLimiter = createLimiter(100, 15 * 60 * 1000, "Too many transaction attempts. Please wait before trying again.");
 
 // System config update limiter
-export const systemConfigUpdateLimiter = createLimiter(10, 15 * 60 * 1000, "Too many configuration update attempts.");
+export const systemConfigUpdateLimiter = createLimiter(50, 15 * 60 * 1000, "Too many configuration update attempts.");
 
 // Wallet action limiter
-export const walletActionLimiter = createLimiter(30, 15 * 60 * 1000, "Too many wallet actions. Please try again later.");
+export const walletActionLimiter = createLimiter(50, 15 * 60 * 1000, "Too many wallet actions. Please try again later.");

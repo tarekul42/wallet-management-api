@@ -54,7 +54,7 @@ const getAllUsers = async (query: Record<string, unknown>) => {
     if (!Object.values(Role).includes(query.role as Role)) {
       throw new AppError(StatusCodes.BAD_REQUEST, "Invalid role value");
     }
-    filter.role = { $eq: query.role as Role };
+    filter.role = { $eq: String(query.role) as Role };
   }
 
   if (query.approvalStatus) {
@@ -74,7 +74,7 @@ const getAllUsers = async (query: Record<string, unknown>) => {
         "Invalid approvalStatus value",
       );
     }
-    filter.approvalStatus = { $eq: query.approvalStatus as ApprovalStatus };
+    filter.approvalStatus = { $eq: String(query.approvalStatus) as ApprovalStatus };
   }
 
   const result = await User.find(filter);

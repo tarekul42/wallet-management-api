@@ -56,25 +56,4 @@ router.post(
   AuthControllers.resetPassword,
 );
 
-router.post(
-  "/verify-email",
-  authLimiter,
-  validateRequest(AuthValidations.verifyEmailValidationSchema),
-  AuthControllers.verifyEmail,
-);
-
-router.post(
-  "/forgot-password",
-  authLimiter,
-  validateRequest(AuthValidations.forgotPasswordValidationSchema),
-  AuthControllers.forgotPassword,
-);
-
-router.post(
-  "/reset-password",
-  authLimiter,
-  validateRequest(AuthValidations.resetPasswordValidationSchema),
-  AuthControllers.resetPassword,
-);
-
 export const AuthRoutes = router;
