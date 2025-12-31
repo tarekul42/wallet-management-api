@@ -58,6 +58,7 @@ router.post(
 
 router.post(
   "/verify-email",
+  authLimiter,
   validateRequest(AuthValidations.verifyEmailValidationSchema),
   AuthControllers.verifyEmail,
 );
