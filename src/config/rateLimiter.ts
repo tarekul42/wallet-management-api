@@ -32,11 +32,11 @@ export const generalApiRateLimiter = apiLimiter; // for compatibility
 // Authentication limiter (stricter)
 export const authLimiter = createLimiter(20);
 
-// Admin actions limiter
-export const adminActionLimiter = createLimiter(30);
+// Admin actions limiter - Adopted 1 minute window from incoming commit
+export const adminActionLimiter = createLimiter(30, 1 * 60 * 1000);
 
-// User self-actions (profile updates etc.)
-export const selfActionLimiter = createLimiter(50);
+// User self-actions (profile updates etc.) - Adopted 1 minute window and limit of 60 from incoming commit
+export const selfActionLimiter = createLimiter(60, 1 * 60 * 1000);
 
 // Transaction limiter
 export const transactionRateLimiter = createLimiter(20, 15 * 60 * 1000, "Too many transaction attempts. Please wait before trying again.");

@@ -6,6 +6,9 @@ import { walletActionLimiter } from "../../config/rateLimiter";
 
 const router = Router();
 
+router.use(walletActionLimiter);
+
+
 router.get(
   "/me",
   walletActionLimiter,
