@@ -3,54 +3,35 @@ import { NextFunction, Request, Response } from "express";
 import httpStatus from "http-status-codes";
 import passport from "passport";
 import AppError from "../../errorHelpers/AppError";
-import { sendResponse } from "../../utils/sendResponse";
-import { catchAsync } from "../../utils/catchAsync";
+import sendResponse from "../../utils/sendResponse";
+import catchAsync from "../../utils/catchAsync";
 import setAuthCookie from "../../utils/setCookie";
-import { createUserTokens } from "../../utils/userTokens";
 import { IUser } from "../user/user.interface";
 import { AuthServices } from "./auth.service";
 import { Document } from "mongoose";
 
-const credentialsLogin = catchAsync(
+const getNewAccessToken = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    // const loginInfo = await AuthServices.credentialsLogin(req.body)
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "No refresh token received from cookies",
+      );
+    }
+    const tokenInfo = await AuthServices.getNewAccessToken(
+      refreshToken as string,
+    );
 
-    passport.authenticate(
-      "local",
-      async (
-        err: Error | null,
-        user: (IUser & Document) | false,
-        info: { message: string }
-      ) => {
-        if (err) {
-          return next(new AppError(401, err.message));
-        }
+    setAuthCookie(res, tokenInfo);
 
-        if (!user) {
-          return next(new AppError(401, info.message));
-        }
-
-        const userTokens = createUserTokens(user);
-
-        const { password: pass, ...rest } = (
-          user as IUser & { toObject: () => IUser }
-        ).toObject();
-
-        setAuthCookie(res, userTokens);
-
-        sendResponse(res, {
-          success: true,
-          statusCode: httpStatus.OK,
-          message: "User Logged In Successfully",
-          data: {
-            accessToken: userTokens.accessToken,
-            refreshToken: userTokens.refreshToken,
-            user: rest,
-          },
-        });
-      }
-    )(req, res, next);
-  }
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "New Access Token Retrived Successfully",
+      data: tokenInfo,
+    });
+  },
 );
 
 const registerUser = catchAsync(async (req: Request, res: Response) => {
@@ -65,37 +46,49 @@ const registerUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const verifyEmail = catchAsync(async (req: Request, res: Response) => {
-  const { token } = req.query;
+const credentialsLogin = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    passport.authenticate(
+      "local",
+      async (
+        err: Error | null,
+        user: (IUser & Document) | false,
+        info: { message: string },
+      ) => {
+        if (err) {
+          return next(new AppError(httpStatus.UNAUTHORIZED, err.message));
+        }
 
-  if (!token) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      "Verification token is required."
-    );
-  }
+        if (!user) {
+          return next(
+            new AppError(
+              httpStatus.UNAUTHORIZED,
+              info.message || "Authentication failed",
+            ),
+          );
+        }
 
-  const result = await AuthServices.verifyEmail(token as string);
+        const loginData = await AuthServices.credentialsLogin(user);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: result.message,
-    data: null,
-  });
-});
+        setAuthCookie(res, loginData);
+
+        sendResponse(res, {
+          success: true,
+          statusCode: httpStatus.OK,
+          message: "User Logged In Successfully",
+          data: loginData,
+        });
+      },
+    )(req, res, next);
+  },
+);
 
 const logoutUser = catchAsync(async (req: Request, res: Response) => {
   const { refreshToken } = req.cookies;
 
-  if (!refreshToken) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      "Refresh token not found in cookies."
-    );
+  if (refreshToken) {
+    await AuthServices.logoutUser(refreshToken);
   }
-
-  const result = AuthServices.logoutUser();
 
   // Clear cookies
   res.clearCookie("accessToken", { httpOnly: true, secure: false }); // secure should be true in production
@@ -104,39 +97,53 @@ const logoutUser = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
+    message: "Logged out successfully.",
+    data: null,
+  });
+});
+
+const verifyEmail = catchAsync(async (req: Request, res: Response) => {
+  const token = (req.query.token as string) || (req.body.token as string);
+  const result = await AuthServices.verifyEmail(token);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
     message: result.message,
     data: null,
   });
 });
 
-const getNewAccessToken = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) {
-      throw new AppError(
-        httpStatus.BAD_REQUEST,
-        "No refresh token received from cookies"
-      );
-    }
-    const tokenInfo = await AuthServices.getNewAccessToken(
-      refreshToken as string
-    );
+const forgotPassword = catchAsync(async (req: Request, res: Response) => {
+  const { email } = req.body;
+  const result = await AuthServices.forgotPassword(email);
 
-    setAuthCookie(res, tokenInfo);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: result.message,
+    data: null,
+  });
+});
 
-    sendResponse(res, {
-      success: true,
-      statusCode: httpStatus.OK,
-      message: "New Access Token Retrived Successfully",
-      data: tokenInfo,
-    });
-  }
-);
+const resetPassword = catchAsync(async (req: Request, res: Response) => {
+  const { token, newPassword } = req.body;
+  const result = await AuthServices.resetPassword(token, newPassword);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: result.message,
+    data: null,
+  });
+});
 
 export const AuthControllers = {
-  credentialsLogin,
   getNewAccessToken,
   registerUser,
-  verifyEmail,
+  credentialsLogin,
   logoutUser,
+  verifyEmail,
+  forgotPassword,
+  resetPassword,
 };

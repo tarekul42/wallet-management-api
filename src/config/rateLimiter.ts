@@ -1,6 +1,7 @@
 import rateLimit from "express-rate-limit";
 import { Request, Response } from "express";
 import httpStatus from "http-status-codes";
+import sendResponse from "../utils/sendResponse";
 
 /**
  * Helper function to create a rate limiter with a consistent response format.
@@ -15,7 +16,7 @@ const createLimiter = (max: number, windowMs: number = 15 * 60 * 1000, message =
         standardHeaders: true,
         legacyHeaders: false,
         handler: (req: Request, res: Response) => {
-            res.status(httpStatus.TOO_MANY_REQUESTS).json({
+            sendResponse(res, {
                 success: false,
                 statusCode: httpStatus.TOO_MANY_REQUESTS,
                 message,
@@ -27,21 +28,22 @@ const createLimiter = (max: number, windowMs: number = 15 * 60 * 1000, message =
 
 // General API limiter
 export const apiLimiter = createLimiter(100);
+export const generalApiRateLimiter = apiLimiter; // for compatibility
 
 // Authentication limiter (stricter)
 export const authLimiter = createLimiter(20);
 
 // Admin actions limiter
-export const adminActionLimiter = createLimiter(30);
+export const adminActionLimiter = createLimiter(30, 1 * 60 * 1000);
 
 // User self-actions (profile updates etc.)
-export const selfActionLimiter = createLimiter(50);
+export const selfActionLimiter = createLimiter(60, 1 * 60 * 1000);
 
 // Transaction limiter
-export const transactionRateLimiter = createLimiter(20, 15 * 60 * 1000, "Too many transaction attempts. Please wait before trying again.");
+export const transactionRateLimiter = createLimiter(100, 15 * 60 * 1000, "Too many transaction attempts. Please wait before trying again.");
 
 // System config update limiter
-export const systemConfigUpdateLimiter = createLimiter(10, 15 * 60 * 1000, "Too many configuration update attempts.");
+export const systemConfigUpdateLimiter = createLimiter(50, 15 * 60 * 1000, "Too many configuration update attempts.");
 
 // Wallet action limiter
-export const walletActionLimiter = createLimiter(30, 15 * 60 * 1000, "Too many wallet actions. Please try again later.");
+export const walletActionLimiter = createLimiter(50, 15 * 60 * 1000, "Too many wallet actions. Please try again later.");

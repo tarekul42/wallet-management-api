@@ -2,8 +2,8 @@ import { Request, Response } from "express";
 import { JwtPayload } from "jsonwebtoken";
 import httpStatus from "http-status-codes";
 import { UserServices } from "./user.service";
-import { sendResponse } from "../../utils/sendResponse";
-import { catchAsync } from "../../utils/catchAsync";
+import sendResponse from "../../utils/sendResponse";
+import catchAsync from "../../utils/catchAsync";
 import AppError from "../../errorHelpers/AppError";
 import { ApprovalStatus } from "./user.interface";
 
@@ -91,7 +91,7 @@ const suspendAgent = catchAsync(async (req: Request, res: Response) => {
   if (!status || (status !== "suspended" && status !== "active")) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
-      "Invalid status. Expected 'suspended' or 'active'."
+      "Invalid status. Expected 'suspended' or 'active'.",
     );
   }
 

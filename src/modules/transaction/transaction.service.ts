@@ -12,37 +12,61 @@ import {
   TransactionType,
 } from "./transaction.interface";
 import { Role } from "../user/user.interface";
-import { SystemSettingsServices } from "../system-settings/system-settings.service";
+import { SystemConfigServices } from "../systemConfig/systemConfig.service";
 
 const MAX_PAGINATION_LIMIT = 100;
-const DAILY_TRANSACTION_LIMIT = 5000;
 
-// Helper to check daily transaction limit
-const checkDailyTransactionLimit = async (
-  userId: mongoose.Types.ObjectId | string,
+/**
+ * Checks if a user has exceeded their daily or monthly transaction limits.
+ * Throws an AppError if any limit is exceeded.
+ */
+const checkAndUpdateTransactionLimits = async (
+  userId: string,
   amount: number,
   session?: ClientSession,
 ) => {
+  const config = await SystemConfigServices.getSystemConfig();
+
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
-  const endOfDay = new Date();
-  endOfDay.setHours(23, 59, 59, 999);
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
 
-  const filter: mongoose.FilterQuery<ITransaction> = {
-    sender: userId,
-    createdAt: { $gte: startOfDay, $lte: endOfDay },
-    type: { $in: [TransactionType.SEND_MONEY, TransactionType.WITHDRAW] },
-    status: TransactionStatus.SUCCESSFUL,
+  const filterBase = {
+    sender: { $eq: String(userId) },
+    status: { $eq: TransactionStatus.SUCCESSFUL },
+    type: { $in: [TransactionType.SEND_MONEY, TransactionType.CASH_OUT, TransactionType.WITHDRAW] },
   };
 
-  const transactions = await Transaction.find(filter).session(session || null);
-  const totalSentToday = transactions.reduce((acc, tr) => acc + tr.amount, 0);
+  // Calculate daily total
+  const dailyTransactions = await Transaction.find({
+    ...filterBase,
+    createdAt: { $gte: startOfDay },
+  }).session(session || null);
 
-  if (totalSentToday + amount > DAILY_TRANSACTION_LIMIT) {
+  const dailyTotal = dailyTransactions.reduce((sum, t) => sum + t.amount, 0);
+
+  if (dailyTotal + amount > config.dailyLimit) {
     throw new AppError(
       StatusCodes.BAD_REQUEST,
-      `Daily transaction limit of ${DAILY_TRANSACTION_LIMIT} exceeded. You have already sent ${totalSentToday} today.`,
+      `Daily transaction limit exceeded. Remaining: ${config.dailyLimit - dailyTotal}`,
+    );
+  }
+
+  // Calculate monthly total
+  const monthlyTransactions = await Transaction.find({
+    ...filterBase,
+    createdAt: { $gte: startOfMonth },
+  }).session(session || null);
+
+  const monthlyTotal = monthlyTransactions.reduce((sum, t) => sum + t.amount, 0);
+
+  if (monthlyTotal + amount > config.monthlyLimit) {
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      `Monthly transaction limit exceeded. Remaining: ${config.monthlyLimit - monthlyTotal}`,
     );
   }
 };
@@ -64,16 +88,18 @@ const _handleAgentCommission = async (
     agent.commissionRate != null &&
     agent.wallet
   ) {
+    // Explicitly parse to number to avoid unexpected behavior
     const commissionRateNum = parseFloat(String(agent.commissionRate));
 
     if (isNaN(commissionRateNum) || commissionRateNum < 0) return;
 
+    // Use the stored rate directly (e.g., 0.02 for 2%)
     const commission = transactionAmount * commissionRateNum;
-    if (commission <= 0) return; // Don't process zero or negative commission
+    if (commission <= 0) return;
 
     // Add commission to agent's wallet
-    await Wallet.findByIdAndUpdate(
-      agent.wallet._id,
+    await Wallet.findOneAndUpdate(
+      { _id: { $eq: String(agent.wallet._id) } },
       { $inc: { balance: commission } },
       { session },
     );
@@ -106,6 +132,13 @@ const sendMoney = async (
     throw new AppError(StatusCodes.BAD_REQUEST, "Amount must be positive.");
   }
 
+  if (typeof receiverEmail !== "string") {
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      "Receiver email must be a valid string.",
+    );
+  }
+
   const session = await mongoose.startSession();
 
   try {
@@ -114,7 +147,9 @@ const sendMoney = async (
     const sender = await User.findById(senderId)
       .populate<{ wallet: IWallet }>("wallet")
       .session(session);
-    const receiver = await User.findOne({ email: receiverEmail })
+
+    // Ensure receiverEmail is a string to prevent NoSQL injection
+    const receiver = await User.findOne({ email: { $eq: String(receiverEmail) } })
       .populate<{ wallet: IWallet }>("wallet")
       .session(session);
 
@@ -146,17 +181,18 @@ const sendMoney = async (
       );
     }
 
-    await checkDailyTransactionLimit(sender._id, amount, session);
+    // Check transaction limits
+    await checkAndUpdateTransactionLimits(senderId, amount, session);
 
-    const settings = await SystemSettingsServices.getSystemSettings();
-    const transactionFeeRate = settings.transactionFee;
-    const fee = amount * transactionFeeRate;
+    // Get dynamic fee from SystemConfig
+    const config = await SystemConfigServices.getSystemConfig();
+    const fee = amount > 100 ? config.sendMoneyFee : 0;
     const totalDeduction = amount + fee;
 
     // Atomically check balance and decrement
     const senderWalletUpdate = await Wallet.findOneAndUpdate(
       {
-        _id: sender.wallet._id,
+        _id: { $eq: String(sender.wallet._id) },
         balance: { $gte: totalDeduction },
       },
       { $inc: { balance: -totalDeduction } },
@@ -168,18 +204,16 @@ const sendMoney = async (
     }
 
     // Increment receiver's balance
-    await Wallet.findByIdAndUpdate(
-      receiver.wallet._id,
+    await Wallet.findOneAndUpdate(
+      { _id: { $eq: String(receiver.wallet._id) } },
       { $inc: { balance: amount } },
       { session },
     );
 
     // Add fee to system wallet
     if (fee > 0) {
-      // NOTE: Real system wallet ID should be in settings. Using placeholder.
-      const SYSTEM_WALLET_ID = "60d5f5f5f5f5f5f5f5f5f5f5";
-      await Wallet.findByIdAndUpdate(
-        SYSTEM_WALLET_ID,
+      await Wallet.findOneAndUpdate(
+        { _id: { $eq: String(config.systemWalletId) } },
         { $inc: { balance: fee } },
         { session },
       );
@@ -245,7 +279,6 @@ const addMoney = async (
     let receiverUser;
 
     if (actor.role === Role.USER) {
-      // For self-top-up, the actor is the receiver, use the populated wallet
       receiverUser = actor;
       receiverWallet = actor.wallet;
     } else if (actor.role === Role.AGENT) {
@@ -255,11 +288,24 @@ const addMoney = async (
           "Receiver ID is required for agents",
         );
       }
-      receiverUser = await User.findById(receiverId).session(session);
+      // Ensure receiverId is a safe literal value before using it in queries
+      if (typeof receiverId !== "string") {
+        throw new AppError(
+          StatusCodes.BAD_REQUEST,
+          "Receiver ID must be a string",
+        );
+      }
+      if (!mongoose.Types.ObjectId.isValid(receiverId)) {
+        throw new AppError(
+          StatusCodes.BAD_REQUEST,
+          "Receiver ID is not a valid identifier",
+        );
+      }
+      receiverUser = await User.findOne({ _id: { $eq: String(receiverId) } }).session(session);
       if (!receiverUser) {
         throw new AppError(StatusCodes.NOT_FOUND, "Receiver not found");
       }
-      receiverWallet = await Wallet.findOne({ owner: receiverId }).session(
+      receiverWallet = await Wallet.findOne({ owner: { $eq: String(receiverId) } }).session(
         session,
       );
     } else {
@@ -277,8 +323,27 @@ const addMoney = async (
       );
     }
 
-    await Wallet.findByIdAndUpdate(
-      receiverWallet._id,
+    const config = await SystemConfigServices.getSystemConfig();
+    const fee = amount * (config.cashInFee / 100);
+    const totalDeduction = actor.role === Role.AGENT ? amount : 0; // Agents pay the amount they cash-in
+
+    if (actor.role === Role.AGENT) {
+      const agentWalletUpdate = await Wallet.findOneAndUpdate(
+        {
+          _id: { $eq: String(actor.wallet?._id) },
+          balance: { $gte: totalDeduction + fee },
+        },
+        { $inc: { balance: -(totalDeduction + fee) } },
+        { session },
+      );
+
+      if (!agentWalletUpdate) {
+        throw new AppError(StatusCodes.BAD_REQUEST, "Insufficient funds in agent wallet.");
+      }
+    }
+
+    await Wallet.findOneAndUpdate(
+      { _id: { $eq: String(receiverWallet._id) } },
       { $inc: { balance: amount } },
       { session },
     );
@@ -290,7 +355,7 @@ const addMoney = async (
           sender: actor.role === Role.AGENT ? actor._id : undefined,
           receiver: receiverUser?._id,
           amount,
-          fee: 0,
+          fee,
           type: TransactionType.CASH_IN,
           status: TransactionStatus.SUCCESSFUL,
           referenceId: uuidv4(),
@@ -300,7 +365,19 @@ const addMoney = async (
       { session },
     );
 
-    await _handleAgentCommission(session, actor, amount, "cash-in");
+    if (actor.role === Role.AGENT) {
+      await _handleAgentCommission(
+        session,
+        actor as unknown as {
+          role: Role;
+          _id: mongoose.Types.ObjectId;
+          commissionRate?: number | null;
+          wallet?: IWallet;
+        },
+        amount,
+        "cash-in",
+      );
+    }
 
     await session.commitTransaction();
 
@@ -353,9 +430,9 @@ const withdrawMoney = async (
 
     if (actor.role === Role.USER) {
       fromUser = actor;
-      fromWallet = actor.wallet; // Use populated wallet
+      fromWallet = actor.wallet;
       transactionType = TransactionType.WITHDRAW;
-      await checkDailyTransactionLimit(actor._id, amount, session);
+      await checkAndUpdateTransactionLimits(actorId, amount, session);
     } else if (actor.role === Role.AGENT) {
       if (!fromId) {
         throw new AppError(
@@ -363,16 +440,23 @@ const withdrawMoney = async (
           "'fromId' is required for agents",
         );
       }
-      fromUser = await User.findById(fromId).session(session);
+      // Validate and safely cast fromId before using it in any database query
+      if (typeof fromId !== "string" || !mongoose.Types.ObjectId.isValid(fromId)) {
+        throw new AppError(
+          StatusCodes.BAD_REQUEST,
+          "Invalid 'fromId' format",
+        );
+      }
+      fromUser = await User.findOne({ _id: { $eq: String(fromId) } }).session(session);
       if (!fromUser) {
         throw new AppError(
           StatusCodes.NOT_FOUND,
           "User to withdraw from not found",
         );
       }
-      fromWallet = await Wallet.findOne({ owner: fromId }).session(session);
+      fromWallet = await Wallet.findOne({ owner: { $eq: String(fromId) } }).session(session);
       transactionType = TransactionType.CASH_OUT;
-      await checkDailyTransactionLimit(fromUser._id, amount, session);
+      await checkAndUpdateTransactionLimits(String(fromUser._id), amount, session);
     } else {
       throw new AppError(StatusCodes.FORBIDDEN, "Admins cannot withdraw money");
     }
@@ -391,13 +475,18 @@ const withdrawMoney = async (
       );
     }
 
+    const config = await SystemConfigServices.getSystemConfig();
+    const feeRate = transactionType === TransactionType.WITHDRAW ? config.withdrawFee : config.cashOutFee;
+    const fee = amount * (feeRate / 100);
+    const totalDeduction = amount + fee;
+
     // Atomically check balance and decrement
     const fromWalletUpdate = await Wallet.findOneAndUpdate(
       {
-        _id: fromWallet._id,
-        balance: { $gte: amount },
+        _id: { $eq: String(fromWallet._id) },
+        balance: { $gte: totalDeduction },
       },
-      { $inc: { balance: -amount } },
+      { $inc: { balance: -totalDeduction } },
       { session },
     );
 
@@ -405,14 +494,32 @@ const withdrawMoney = async (
       throw new AppError(StatusCodes.BAD_REQUEST, "Insufficient funds.");
     }
 
+    // If it's a cash-out, add amount to agent wallet
+    if (transactionType === TransactionType.CASH_OUT) {
+      await Wallet.findOneAndUpdate(
+        { _id: { $eq: String(actor.wallet?._id) } },
+        { $inc: { balance: amount } },
+        { session },
+      );
+    }
+
+    // Add fee to system wallet
+    if (fee > 0) {
+      await Wallet.findOneAndUpdate(
+        { _id: { $eq: String(config.systemWalletId) } },
+        { $inc: { balance: fee } },
+        { session },
+      );
+    }
+
     await Transaction.create(
       [
         {
           walletId: fromWallet._id,
           sender: actor._id,
-          receiver: fromUser._id, // Clarification: `receiver` is the owner of the debited wallet.
+          receiver: fromUser._id,
           amount,
-          fee: 0,
+          fee,
           type: transactionType,
           status: TransactionStatus.SUCCESSFUL,
           referenceId: uuidv4(),
@@ -422,7 +529,19 @@ const withdrawMoney = async (
       { session },
     );
 
-    await _handleAgentCommission(session, actor, amount, "cash-out");
+    if (actor.role === Role.AGENT) {
+      await _handleAgentCommission(
+        session,
+        actor as unknown as {
+          role: Role;
+          _id: mongoose.Types.ObjectId;
+          commissionRate?: number | null;
+          wallet?: IWallet;
+        },
+        amount,
+        "cash-out",
+      );
+    }
 
     await session.commitTransaction();
 
@@ -456,16 +575,22 @@ const viewHistory = async (actorId: string, query: Record<string, unknown>) => {
 
   const filter: mongoose.FilterQuery<ITransaction> = {};
 
-  if (actor.role === Role.ADMIN) {
+  if (actor.role === Role.ADMIN || actor.role === Role.SUPER_ADMIN) {
     if (typeof query.userId === "string") {
-      filter.$or = [{ sender: query.userId }, { receiver: query.userId }];
+      filter.$or = [
+        { sender: { $eq: String(query.userId) } },
+        { receiver: { $eq: String(query.userId) } }
+      ];
     }
   } else {
-    filter.$or = [{ sender: actor._id }, { receiver: actor._id }];
+    filter.$or = [
+      { sender: { $eq: String(actor._id) } },
+      { receiver: { $eq: String(actor._id) } }
+    ];
   }
 
   if (typeof query.type === "string") {
-    filter.type = query.type;
+    filter.type = { $eq: query.type };
   }
 
   if (
@@ -516,8 +641,8 @@ const getCommissionHistory = async (
   const skip = (page - 1) * limit;
 
   const filter: mongoose.FilterQuery<ITransaction> = {
-    receiver: actor._id,
-    type: TransactionType.COMMISSION,
+    receiver: { $eq: String(actor._id) },
+    type: { $eq: TransactionType.COMMISSION },
   };
 
   const transactions = await Transaction.find(filter)

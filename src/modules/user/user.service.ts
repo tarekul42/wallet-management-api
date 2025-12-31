@@ -7,6 +7,7 @@ import { Wallet } from "../wallet/wallet.model";
 import { WalletStatus } from "../wallet/wallet.interface";
 import { createUserAndWallet } from "./user.helpers";
 import bcrypt from "bcryptjs";
+import { notifyAgentApproved, notifyAgentSuspended } from "../../utils/notification.utils";
 
 // Service to get a user's own profile
 const getMyProfile = async (userId: string) => {
@@ -19,11 +20,11 @@ const getMyProfile = async (userId: string) => {
 
 const updateMyProfile = async (userId: string, payload: Partial<IUser>) => {
   const updateData: Partial<IUser> = {};
-  if (payload.name) {
-    updateData.name = payload.name;
+  if (payload.name && typeof payload.name === "string") {
+    updateData.name = payload.name.trim();
   }
-  if (payload.phone) {
-    updateData.phone = payload.phone;
+  if (payload.phone && typeof payload.phone === "string") {
+    updateData.phone = payload.phone.trim();
   }
 
   if (Object.keys(updateData).length === 0) {
@@ -101,7 +102,7 @@ const updateUserStatus = async (
     if (currentUserId === targetUserId) {
       throw new AppError(StatusCodes.BAD_REQUEST, "You cannot block yourself.");
     }
-    if (targetUser.role === Role.ADMIN) {
+    if (targetUser.role === Role.ADMIN || targetUser.role === Role.SUPER_ADMIN) {
       throw new AppError(
         StatusCodes.FORBIDDEN,
         "Admins cannot block other admins.",
@@ -123,6 +124,7 @@ const updateUserStatus = async (
         newStatus === IsActive.BLOCKED
           ? WalletStatus.BLOCKED
           : WalletStatus.ACTIVE;
+
       await Wallet.findOneAndUpdate(
         { _id: { $eq: String(targetUser.wallet) } },
         { $set: { status: walletStatus } },
@@ -187,6 +189,15 @@ const agentApprovalByAdmin = async (
   if (payload.approvalStatus === ApprovalStatus.APPROVED) {
     agent.approvalStatus = ApprovalStatus.APPROVED;
     agent.commissionRate = payload.commissionRate || 0.02;
+
+    // Notify agent
+    notifyAgentApproved({
+      userId: agent._id.toString(),
+      email: agent.email,
+      name: agent.name,
+      commissionRate: agent.commissionRate
+    });
+
   } else {
     agent.approvalStatus = ApprovalStatus.REJECTED;
     agent.commissionRate = null;
@@ -222,6 +233,14 @@ const suspendAgent = async (
       );
     }
     agent.approvalStatus = ApprovalStatus.SUSPENDED;
+
+    // Notify agent
+    notifyAgentSuspended({
+      userId: agent._id.toString(),
+      email: agent.email,
+      name: agent.name
+    });
+
   } else if (newStatus === ApprovalStatus.APPROVED) {
     if (agent.approvalStatus !== ApprovalStatus.SUSPENDED) {
       throw new AppError(
@@ -230,9 +249,18 @@ const suspendAgent = async (
       );
     }
     agent.approvalStatus = ApprovalStatus.APPROVED;
+
+    // Notify agent
+    notifyAgentApproved({
+      userId: agent._id.toString(),
+      email: agent.email,
+      name: agent.name,
+      commissionRate: agent.commissionRate || 0,
+    });
   }
 
   await agent.save();
+
   return agent;
 };
 
@@ -272,7 +300,9 @@ const createAdmin = async (payload: IUser) => {
     );
   }
 
-  const user = await User.findOne({ email: { $eq: payload.email } });
+  const normalizedEmail = payload.email.trim().toLowerCase();
+
+  const user = await User.findOne({ email: { $eq: normalizedEmail } });
 
   if (user) {
     throw new AppError(
@@ -296,7 +326,7 @@ const createAdmin = async (payload: IUser) => {
 
     const adminData: Partial<IUser> = {
       name: payload.name,
-      email: payload.email,
+      email: normalizedEmail,
       password: payload.password,
       phone: payload.phone,
       role: payload.role,

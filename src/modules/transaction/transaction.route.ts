@@ -8,12 +8,12 @@ import {
   withdrawMoneyValidationSchema,
 } from "./transaction.validation";
 import { validateRequest } from "../../middlewares/validateRequest";
-
 import { transactionRateLimiter } from "../../config/rateLimiter";
 
 const router = express.Router();
 
 router.use(transactionRateLimiter);
+
 
 router.post(
   "/send-money",

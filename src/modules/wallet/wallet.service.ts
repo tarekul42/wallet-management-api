@@ -4,6 +4,7 @@ import AppError from "../../errorHelpers/AppError";
 import { User } from "../user/user.model";
 import { Wallet } from "./wallet.model";
 import { IWallet, WalletStatus } from "./wallet.interface";
+import { notifyWalletBlocked, notifyWalletUnblocked } from "../../utils/notification.utils";
 
 const getMyWallet = async (userId: string) => {
   const user = await User.findById(userId);
@@ -27,16 +28,18 @@ const getAllWallets = async (
   const filter: mongoose.FilterQuery<IWallet> = {};
 
   if (query.status) {
-    const status = query.status as string;
-
     if (typeof query.status !== "string") {
       throw new AppError(StatusCodes.BAD_REQUEST, "Invalid wallet status.");
     }
 
-    if (!Object.values(WalletStatus).includes(status as WalletStatus)) {
+    const rawStatus = query.status as string;
+
+    if (!Object.values(WalletStatus).includes(rawStatus as WalletStatus)) {
       throw new AppError(StatusCodes.BAD_REQUEST, "Invalid wallet status.");
     }
-    filter.status = status;
+
+    const validatedStatus = rawStatus as WalletStatus;
+    filter.status = validatedStatus;
   }
 
   const wallets = await Wallet.find(filter);
@@ -58,6 +61,25 @@ const updateWalletStatus = async (walletId: string, status: WalletStatus) => {
   }
   wallet.status = status;
   await wallet.save();
+
+  // Send notification
+  const user = await User.findById(wallet.owner);
+  if (user) {
+    if (status === WalletStatus.BLOCKED) {
+      notifyWalletBlocked({
+        userId: user._id.toString(),
+        email: user.email,
+        name: user.name,
+      });
+    } else if (status === WalletStatus.ACTIVE) {
+      notifyWalletUnblocked({
+        userId: user._id.toString(),
+        email: user.email,
+        name: user.name,
+      });
+    }
+  }
+
   return wallet;
 };
 
