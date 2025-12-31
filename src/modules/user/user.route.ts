@@ -8,8 +8,16 @@ import {
   updatePasswordZodSchema,
 } from "./user.validation";
 import validateRequest from "../../middlewares/validateRequest";
+import rateLimit from "express-rate-limit";
 
 const router = Router();
+
+const createAdminRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 create-admin requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 router.get(
   "/me",
@@ -28,6 +36,7 @@ router.patch(
   validateRequest(updatePasswordZodSchema),
   UserControllers.updatePassword,
 );
+  createAdminRateLimiter,
 
 router.post(
   "/create-admin",
