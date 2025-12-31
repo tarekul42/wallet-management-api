@@ -288,6 +288,19 @@ const addMoney = async (
           "Receiver ID is required for agents",
         );
       }
+      // Ensure receiverId is a safe literal value before using it in queries
+      if (typeof receiverId !== "string") {
+        throw new AppError(
+          StatusCodes.BAD_REQUEST,
+          "Receiver ID must be a string",
+        );
+      }
+      if (!mongoose.Types.ObjectId.isValid(receiverId)) {
+        throw new AppError(
+          StatusCodes.BAD_REQUEST,
+          "Receiver ID is not a valid identifier",
+        );
+      }
       receiverUser = await User.findOne({ _id: { $eq: String(receiverId) } }).session(session);
       if (!receiverUser) {
         throw new AppError(StatusCodes.NOT_FOUND, "Receiver not found");
