@@ -169,9 +169,9 @@ const forgotPassword = async (email: string) => {
 };
 
 const resetPassword = async (token: string, newPassword: string) => {
-  const user = await User.findOne({ resetPasswordToken: token }).select(
-    "+password",
-  );
+  const user = await User.findOne({
+    resetPasswordToken: { $eq: token },
+  }).select("+password");
 
   if (!user) {
     throw new AppError(StatusCodes.BAD_REQUEST, "Invalid reset token");
