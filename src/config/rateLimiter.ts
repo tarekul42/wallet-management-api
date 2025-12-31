@@ -9,7 +9,7 @@ import sendResponse from "../utils/sendResponse";
  * @param windowMs - Time window in milliseconds (default 15 minutes)
  * @param message - Custom error message
  */
-const createLimiter = (max: number, windowMs: number = 15 * 60 * 1000, message: string = "Too many requests, Please try again later.") => {
+const createLimiter = (max: number, windowMs: number = 15 * 60 * 1000, message = "Too many requests, Please try again later.") => {
     return rateLimit({
         windowMs,
         max,
