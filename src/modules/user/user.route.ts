@@ -20,6 +20,7 @@ router.get(
   checkAuth(Role.USER, Role.ADMIN, Role.AGENT, Role.SUPER_ADMIN),
   UserControllers.getMyProfile,
 );
+
 router.patch(
   "/me",
   selfActionLimiter,
@@ -50,18 +51,21 @@ router.get(
   checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
   UserControllers.getAllUsers,
 );
+
 router.patch(
   "/:id/block",
   adminActionLimiter,
   checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
   UserControllers.blockUser,
 );
+
 router.patch(
   "/:id/unblock",
   adminActionLimiter,
   checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
   UserControllers.unblockUser,
 );
+
 router.patch(
   "/:id/approval",
   adminActionLimiter,
