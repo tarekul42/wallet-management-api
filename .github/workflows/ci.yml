@@ -1,0 +1,59 @@
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+name: CI
+
+jobs:
+  build:
+    name: Build & Check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: |
+          if [ -f tsconfig.json ]; then
+            npx tsc --noEmit
+          else
+            echo "No tsconfig.json — skipping tsc check"
+          fi
+
+      - name: Lint
+        run: |
+          if npm run -s lint --if-present; then
+            echo "Lint passed (or no lint script)"
+          else
+            exit 1
+          fi
+
+      - name: Run tests
+        run: |
+          if npm test --if-present; then
+            echo "Tests passed (or no test script)"
+          else
+            exit 1
+          fi
+
+      - name: Build
+        run: |
+          if npm run -s build --if-present; then
+            echo "Build succeeded (or no build script)"
+          else
+            exit 1
+          fi
