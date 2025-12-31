@@ -349,14 +349,22 @@ const withdrawMoney = async (
           "'fromId' is required for agents",
         );
       }
-      fromUser = await User.findById(fromId).session(session);
+      // Validate and safely cast fromId before using it in any database query
+      if (typeof fromId !== "string" || !mongoose.Types.ObjectId.isValid(fromId)) {
+        throw new AppError(
+          StatusCodes.BAD_REQUEST,
+          "Invalid 'fromId' format",
+        );
+      }
+      const fromObjectId = new mongoose.Types.ObjectId(fromId);
+      fromUser = await User.findById(fromObjectId).session(session);
       if (!fromUser) {
         throw new AppError(
           StatusCodes.NOT_FOUND,
           "User to withdraw from not found",
         );
       }
-      fromWallet = await Wallet.findOne({ owner: fromId }).session(session);
+      fromWallet = await Wallet.findOne({ owner: fromObjectId }).session(session);
       transactionType = TransactionType.CASH_OUT;
     } else {
       throw new AppError(StatusCodes.FORBIDDEN, "Admins cannot withdraw money");
