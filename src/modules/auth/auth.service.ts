@@ -135,7 +135,12 @@ const logoutUser = async (refreshToken: string) => {
 };
 
 const verifyEmail = async (token: string) => {
-  const user = await User.findOne({ verificationToken: token });
+  // Ensure token is a primitive string to prevent NoSQL injection
+  if (typeof token !== "string") {
+    throw new AppError(StatusCodes.BAD_REQUEST, "Invalid verification token");
+  }
+
+  const user = await User.findOne({ verificationToken: { $eq: token } });
 
   if (!user) {
     throw new AppError(StatusCodes.BAD_REQUEST, "Invalid verification token");
