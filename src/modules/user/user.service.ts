@@ -11,7 +11,7 @@ import { notifyAgentApproved, notifyAgentSuspended } from "../../utils/notificat
 
 // Service to get a user's own profile
 const getMyProfile = async (userId: string) => {
-  const result = await User.findById(userId);
+  const result = await User.findOne({ _id: { $eq: userId } });
   if (!result) {
     throw new AppError(StatusCodes.NOT_FOUND, "User not found");
   }
@@ -31,10 +31,13 @@ const updateMyProfile = async (userId: string, payload: Partial<IUser>) => {
     throw new AppError(StatusCodes.BAD_REQUEST, "No valid fields to update.");
   }
 
-  const result = await User.findByIdAndUpdate(userId, updateData, {
-    new: true,
-    runValidators: true,
-  });
+  const result = await User.findOneAndUpdate(
+    { _id: { $eq: userId } },
+    updateData,
+    {
+      new: true,
+      runValidators: true,
+    });
   if (!result) {
     throw new AppError(StatusCodes.NOT_FOUND, "User not found");
   }
@@ -51,7 +54,7 @@ const getAllUsers = async (query: Record<string, unknown>) => {
     if (!Object.values(Role).includes(query.role as Role)) {
       throw new AppError(StatusCodes.BAD_REQUEST, "Invalid role value");
     }
-    filter.role = query.role;
+    filter.role = { $eq: query.role as Role };
   }
 
   if (query.approvalStatus) {
@@ -71,7 +74,7 @@ const getAllUsers = async (query: Record<string, unknown>) => {
         "Invalid approvalStatus value",
       );
     }
-    filter.approvalStatus = query.approvalStatus;
+    filter.approvalStatus = { $eq: query.approvalStatus as ApprovalStatus };
   }
 
   const result = await User.find(filter);
@@ -83,7 +86,7 @@ const updateUserStatus = async (
   newStatus: IsActive.ACTIVE | IsActive.BLOCKED,
   currentUserId?: string,
 ) => {
-  const targetUser = await User.findById(targetUserId);
+  const targetUser = await User.findOne({ _id: { $eq: targetUserId } });
   if (!targetUser) {
     throw new AppError(StatusCodes.NOT_FOUND, "Target user not found");
   }
@@ -121,8 +124,8 @@ const updateUserStatus = async (
         newStatus === IsActive.BLOCKED
           ? WalletStatus.BLOCKED
           : WalletStatus.ACTIVE;
-      await Wallet.findByIdAndUpdate(
-        targetUser.wallet,
+      await Wallet.findOneAndUpdate(
+        { _id: { $eq: targetUser.wallet } },
         { status: walletStatus },
         { session },
       );
@@ -155,7 +158,7 @@ const agentApprovalByAdmin = async (
   userId: string,
   payload: { approvalStatus: ApprovalStatus; commissionRate?: number },
 ) => {
-  const agent = await User.findById(userId);
+  const agent = await User.findOne({ _id: { $eq: userId } });
 
   if (!agent) {
     throw new AppError(StatusCodes.NOT_FOUND, "Agent not found");
@@ -209,7 +212,7 @@ const suspendAgent = async (
   agentId: string,
   newStatus: ApprovalStatus.SUSPENDED | ApprovalStatus.APPROVED,
 ) => {
-  const agent = await User.findById(agentId);
+  const agent = await User.findOne({ _id: { $eq: agentId } });
 
   if (!agent) {
     throw new AppError(StatusCodes.NOT_FOUND, "Agent not found");
@@ -270,7 +273,7 @@ const updatePassword = async (
   userId: string,
   payload: IUpdatePasswordPayload,
 ) => {
-  const user = await User.findById(userId).select("+password");
+  const user = await User.findOne({ _id: { $eq: userId } }).select("+password");
   if (!user) {
     throw new AppError(StatusCodes.NOT_FOUND, "User not found");
   }

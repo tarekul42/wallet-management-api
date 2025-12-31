@@ -17,6 +17,6 @@ router.post("/login", rateLimiter_1.authLimiter, (0, validateRequest_1.validateR
 router.post("/logout", (0, checkAuth_1.default)(user_interface_1.Role.USER, user_interface_1.Role.AGENT, user_interface_1.Role.ADMIN, user_interface_1.Role.SUPER_ADMIN), auth_controller_1.AuthControllers.logoutUser);
 router.post("/refresh-token", auth_controller_1.AuthControllers.getNewAccessToken);
 router.post("/verify-email", rateLimiter_1.authLimiter, (0, validateRequest_1.validateRequest)(auth_validation_1.AuthValidations.verifyEmailValidationSchema), auth_controller_1.AuthControllers.verifyEmail);
-router.post("/forgot-password", (0, validateRequest_1.validateRequest)(auth_validation_1.AuthValidations.forgotPasswordValidationSchema), auth_controller_1.AuthControllers.forgotPassword);
-router.post("/reset-password", (0, validateRequest_1.validateRequest)(auth_validation_1.AuthValidations.resetPasswordValidationSchema), auth_controller_1.AuthControllers.resetPassword);
+router.post("/forgot-password", rateLimiter_1.authLimiter, (0, validateRequest_1.validateRequest)(auth_validation_1.AuthValidations.forgotPasswordValidationSchema), auth_controller_1.AuthControllers.forgotPassword);
+router.post("/reset-password", rateLimiter_1.authLimiter, (0, validateRequest_1.validateRequest)(auth_validation_1.AuthValidations.resetPasswordValidationSchema), auth_controller_1.AuthControllers.resetPassword);
 exports.AuthRoutes = router;

@@ -16,19 +16,20 @@ const router = Router();
 
 router.get(
   "/me",
-  checkAuth(Role.USER, Role.ADMIN, Role.AGENT, Role.SUPER_ADMIN),
   selfActionLimiter,
+  checkAuth(Role.USER, Role.ADMIN, Role.AGENT, Role.SUPER_ADMIN),
   UserControllers.getMyProfile,
 );
 router.patch(
   "/me",
-  checkAuth(Role.USER, Role.ADMIN, Role.AGENT, Role.SUPER_ADMIN),
   selfActionLimiter,
+  checkAuth(Role.USER, Role.ADMIN, Role.AGENT, Role.SUPER_ADMIN),
   UserControllers.updateMyProfile,
 );
 
 router.patch(
   "/me/update-password",
+  selfActionLimiter,
   checkAuth(Role.USER, Role.ADMIN, Role.AGENT, Role.SUPER_ADMIN),
   validateRequest(updatePasswordZodSchema),
   UserControllers.updatePassword,
@@ -36,8 +37,8 @@ router.patch(
 
 router.post(
   "/create-admin",
-  checkAuth(Role.SUPER_ADMIN),
   adminActionLimiter,
+  checkAuth(Role.SUPER_ADMIN),
   validateRequest(createAdminZodSchema),
   UserControllers.createAdmin,
 );

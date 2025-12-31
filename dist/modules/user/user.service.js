@@ -25,7 +25,7 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const notification_utils_1 = require("../../utils/notification.utils");
 // Service to get a user's own profile
 const getMyProfile = (userId) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield user_model_1.User.findById(userId);
+    const result = yield user_model_1.User.findOne({ _id: { $eq: userId } });
     if (!result) {
         throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "User not found");
     }
@@ -42,7 +42,7 @@ const updateMyProfile = (userId, payload) => __awaiter(void 0, void 0, void 0, f
     if (Object.keys(updateData).length === 0) {
         throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "No valid fields to update.");
     }
-    const result = yield user_model_1.User.findByIdAndUpdate(userId, updateData, {
+    const result = yield user_model_1.User.findOneAndUpdate({ _id: { $eq: userId } }, updateData, {
         new: true,
         runValidators: true,
     });
@@ -60,7 +60,7 @@ const getAllUsers = (query) => __awaiter(void 0, void 0, void 0, function* () {
         if (!Object.values(user_interface_1.Role).includes(query.role)) {
             throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Invalid role value");
         }
-        filter.role = query.role;
+        filter.role = { $eq: query.role };
     }
     if (query.approvalStatus) {
         if (typeof query.approvalStatus !== "string") {
@@ -69,13 +69,13 @@ const getAllUsers = (query) => __awaiter(void 0, void 0, void 0, function* () {
         if (!Object.values(user_interface_1.ApprovalStatus).includes(query.approvalStatus)) {
             throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Invalid approvalStatus value");
         }
-        filter.approvalStatus = query.approvalStatus;
+        filter.approvalStatus = { $eq: query.approvalStatus };
     }
     const result = yield user_model_1.User.find(filter);
     return result;
 });
 const updateUserStatus = (targetUserId, newStatus, currentUserId) => __awaiter(void 0, void 0, void 0, function* () {
-    const targetUser = yield user_model_1.User.findById(targetUserId);
+    const targetUser = yield user_model_1.User.findOne({ _id: { $eq: targetUserId } });
     if (!targetUser) {
         throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "Target user not found");
     }
@@ -101,7 +101,7 @@ const updateUserStatus = (targetUserId, newStatus, currentUserId) => __awaiter(v
             const walletStatus = newStatus === user_interface_1.IsActive.BLOCKED
                 ? wallet_interface_1.WalletStatus.BLOCKED
                 : wallet_interface_1.WalletStatus.ACTIVE;
-            yield wallet_model_1.Wallet.findByIdAndUpdate(targetUser.wallet, { status: walletStatus }, { session });
+            yield wallet_model_1.Wallet.findOneAndUpdate({ _id: { $eq: targetUser.wallet } }, { status: walletStatus }, { session });
         }
         yield session.commitTransaction();
     }
@@ -125,7 +125,7 @@ const unblockUser = (targetUserId) => __awaiter(void 0, void 0, void 0, function
     return updateUserStatus(targetUserId, user_interface_1.IsActive.ACTIVE);
 });
 const agentApprovalByAdmin = (userId, payload) => __awaiter(void 0, void 0, void 0, function* () {
-    const agent = yield user_model_1.User.findById(userId);
+    const agent = yield user_model_1.User.findOne({ _id: { $eq: userId } });
     if (!agent) {
         throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "Agent not found");
     }
@@ -159,7 +159,7 @@ const agentApprovalByAdmin = (userId, payload) => __awaiter(void 0, void 0, void
     return agent;
 });
 const suspendAgent = (agentId, newStatus) => __awaiter(void 0, void 0, void 0, function* () {
-    const agent = yield user_model_1.User.findById(agentId);
+    const agent = yield user_model_1.User.findOne({ _id: { $eq: agentId } });
     if (!agent) {
         throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "Agent not found");
     }
@@ -198,7 +198,7 @@ const suspendAgent = (agentId, newStatus) => __awaiter(void 0, void 0, void 0, f
     return agent;
 });
 const updatePassword = (userId, payload) => __awaiter(void 0, void 0, void 0, function* () {
-    const user = yield user_model_1.User.findById(userId).select("+password");
+    const user = yield user_model_1.User.findOne({ _id: { $eq: userId } }).select("+password");
     if (!user) {
         throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "User not found");
     }
