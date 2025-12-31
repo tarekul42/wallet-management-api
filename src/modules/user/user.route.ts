@@ -37,18 +37,14 @@ router.patch(
   "/me",
   checkAuth(Role.USER, Role.ADMIN, Role.AGENT, Role.SUPER_ADMIN),
   selfActionLimiter,
-  selfActionLimiter,
   UserControllers.updateMyProfile,
 );
-  adminActionLimiter,
 
-  adminActionLimiter,
 router.patch(
   "/me/update-password",
   checkAuth(Role.USER, Role.ADMIN, Role.AGENT, Role.SUPER_ADMIN),
   validateRequest(updatePasswordZodSchema),
   UserControllers.updatePassword,
-  adminActionLimiter,
 );
 
 router.post(
@@ -61,7 +57,6 @@ router.post(
 
 router.get(
   "/",
-  adminActionLimiter,
   adminActionLimiter,
   checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
   UserControllers.getAllUsers,

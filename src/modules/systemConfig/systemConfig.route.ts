@@ -25,9 +25,9 @@ router.get("/", SystemConfigControllers.getSystemConfig);
  * Update system configuration
  * Admin only - requires SUPER_ADMIN or ADMIN role
  */
-    systemConfigUpdateLimiter,
 router.patch(
     "/",
+    systemConfigUpdateLimiter,
     checkAuth(Role.SUPER_ADMIN, Role.ADMIN),
     validateRequest(SystemConfigValidations.updateSystemConfigValidationSchema),
     SystemConfigControllers.updateSystemConfig,

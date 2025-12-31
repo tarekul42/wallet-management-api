@@ -57,6 +57,9 @@ const sendMoney = (senderId, receiverEmail, amount, description) => __awaiter(vo
     if (amount <= 0) {
         throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Amount must be positive.");
     }
+    if (typeof receiverEmail !== "string") {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Receiver email must be a valid string.");
+    }
     const session = yield mongoose_1.default.startSession();
     try {
         session.startTransaction();
@@ -149,6 +152,13 @@ const addMoney = (actorId, amount, receiverId) => __awaiter(void 0, void 0, void
             if (!receiverId) {
                 throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Receiver ID is required for agents");
             }
+            // Ensure receiverId is a safe literal value before using it in queries
+            if (typeof receiverId !== "string") {
+                throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Receiver ID must be a string");
+            }
+            if (!mongoose_1.default.Types.ObjectId.isValid(receiverId)) {
+                throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Receiver ID is not a valid identifier");
+            }
             receiverUser = yield user_model_1.User.findById(receiverId).session(session);
             if (!receiverUser) {
                 throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "Receiver not found");
@@ -240,11 +250,16 @@ const withdrawMoney = (actorId, amount, fromId) => __awaiter(void 0, void 0, voi
             if (!fromId) {
                 throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "'fromId' is required for agents");
             }
-            fromUser = yield user_model_1.User.findById(fromId).session(session);
+            // Validate and safely cast fromId before using it in any database query
+            if (typeof fromId !== "string" || !mongoose_1.default.Types.ObjectId.isValid(fromId)) {
+                throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Invalid 'fromId' format");
+            }
+            const fromObjectId = new mongoose_1.default.Types.ObjectId(fromId);
+            fromUser = yield user_model_1.User.findById(fromObjectId).session(session);
             if (!fromUser) {
                 throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "User to withdraw from not found");
             }
-            fromWallet = yield wallet_model_1.Wallet.findOne({ owner: fromId }).session(session);
+            fromWallet = yield wallet_model_1.Wallet.findOne({ owner: fromObjectId }).session(session);
             transactionType = transaction_interface_1.TransactionType.CASH_OUT;
         }
         else {

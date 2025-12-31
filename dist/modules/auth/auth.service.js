@@ -42,8 +42,12 @@ const getNewAccessToken = (refreshToken) => __awaiter(void 0, void 0, void 0, fu
     return { accessToken: newAccessToken };
 });
 const registerUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
+    const email = payload.email;
+    if (typeof email !== "string" || email.trim() === "") {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "A valid email address must be provided.");
+    }
     // check if user exists
-    const user = yield user_model_1.User.findOne({ email: payload.email });
+    const user = yield user_model_1.User.findOne({ email });
     if (user) {
         throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "User already exists with this email.");
     }
@@ -54,7 +58,7 @@ const registerUser = (payload) => __awaiter(void 0, void 0, void 0, function* ()
     // Sanitize payload to prevent mass assignment
     const userData = {
         name: payload.name,
-        email: payload.email,
+        email,
         password: payload.password,
         phone: payload.phone,
         address: payload.address,
@@ -112,7 +116,11 @@ const logoutUser = (refreshToken) => __awaiter(void 0, void 0, void 0, function*
     }
 });
 const verifyEmail = (token) => __awaiter(void 0, void 0, void 0, function* () {
-    const user = yield user_model_1.User.findOne({ verificationToken: token });
+    // Ensure token is a primitive string to prevent NoSQL injection
+    if (typeof token !== "string") {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Invalid verification token");
+    }
+    const user = yield user_model_1.User.findOne({ verificationToken: { $eq: token } });
     if (!user) {
         throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Invalid verification token");
     }
@@ -122,7 +130,11 @@ const verifyEmail = (token) => __awaiter(void 0, void 0, void 0, function* () {
     return { message: "Email verified successfully" };
 });
 const forgotPassword = (email) => __awaiter(void 0, void 0, void 0, function* () {
-    const user = yield user_model_1.User.findOne({ email });
+    // Ensure email is a primitive string to prevent NoSQL injection
+    if (typeof email !== "string") {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Invalid email");
+    }
+    const user = yield user_model_1.User.findOne({ email: { $eq: email } });
     if (!user) {
         throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "User not found");
     }
@@ -133,7 +145,9 @@ const forgotPassword = (email) => __awaiter(void 0, void 0, void 0, function* ()
     return { message: "Password reset email sent" };
 });
 const resetPassword = (token, newPassword) => __awaiter(void 0, void 0, void 0, function* () {
-    const user = yield user_model_1.User.findOne({ resetPasswordToken: token }).select("+password");
+    const user = yield user_model_1.User.findOne({
+        resetPasswordToken: { $eq: token },
+    }).select("+password");
     if (!user) {
         throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Invalid reset token");
     }

@@ -33,14 +33,15 @@ const getMyWallet = (userId) => __awaiter(void 0, void 0, void 0, function* () {
 const getAllWallets = (query) => __awaiter(void 0, void 0, void 0, function* () {
     const filter = {};
     if (query.status) {
-        const status = query.status;
         if (typeof query.status !== "string") {
             throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Invalid wallet status.");
         }
-        if (!Object.values(wallet_interface_1.WalletStatus).includes(status)) {
+        const rawStatus = query.status;
+        if (!Object.values(wallet_interface_1.WalletStatus).includes(rawStatus)) {
             throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Invalid wallet status.");
         }
-        filter.status = status;
+        const validatedStatus = rawStatus;
+        filter.status = validatedStatus;
     }
     const wallets = yield wallet_model_1.Wallet.find(filter);
     return wallets;

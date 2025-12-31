@@ -211,7 +211,11 @@ const updatePassword = (userId, payload) => __awaiter(void 0, void 0, void 0, fu
     return user;
 });
 const createAdmin = (payload) => __awaiter(void 0, void 0, void 0, function* () {
-    const user = yield user_model_1.User.findOne({ email: payload.email });
+    if (typeof payload.email !== "string") {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Invalid email format.");
+    }
+    const normalizedEmail = payload.email.trim().toLowerCase();
+    const user = yield user_model_1.User.findOne({ email: { $eq: normalizedEmail } });
     if (user) {
         throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "User already exists with this email.");
     }
@@ -224,7 +228,7 @@ const createAdmin = (payload) => __awaiter(void 0, void 0, void 0, function* () 
         session.startTransaction();
         const adminData = {
             name: payload.name,
-            email: payload.email,
+            email: normalizedEmail,
             password: payload.password,
             phone: payload.phone,
             role: payload.role,
