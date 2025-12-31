@@ -32,6 +32,7 @@ router.post("/refresh-token", AuthControllers.getNewAccessToken);
 
 router.post(
   "/verify-email",
+  authLimiter,
   validateRequest(AuthValidations.verifyEmailValidationSchema),
   AuthControllers.verifyEmail,
 );
