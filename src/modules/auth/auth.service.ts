@@ -149,7 +149,12 @@ const verifyEmail = async (token: string) => {
 };
 
 const forgotPassword = async (email: string) => {
-  const user = await User.findOne({ email });
+  // Ensure email is a primitive string to prevent NoSQL injection
+  if (typeof email !== "string") {
+    throw new AppError(StatusCodes.BAD_REQUEST, "Invalid email");
+  }
+
+  const user = await User.findOne({ email: { $eq: email } });
 
   if (!user) {
     throw new AppError(StatusCodes.NOT_FOUND, "User not found");
