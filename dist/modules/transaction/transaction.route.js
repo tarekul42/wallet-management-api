@@ -10,13 +10,9 @@ const transaction_controller_1 = require("./transaction.controller");
 const checkAuth_1 = __importDefault(require("../../middlewares/checkAuth"));
 const transaction_validation_1 = require("./transaction.validation");
 const validateRequest_1 = require("../../middlewares/validateRequest");
-const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
+const rateLimiter_1 = require("../../config/rateLimiter");
 const router = express_1.default.Router();
-const transactionRateLimiter = (0, express_rate_limit_1.default)({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per window per transaction routes
-});
-router.use(transactionRateLimiter);
+router.use(rateLimiter_1.transactionRateLimiter);
 router.post("/send-money", (0, checkAuth_1.default)(user_interface_1.Role.USER), (0, validateRequest_1.validateRequest)(transaction_validation_1.sendMoneyValidationSchema), transaction_controller_1.TransactionControllers.sendMoney);
 router.post("/add-money", (0, checkAuth_1.default)(user_interface_1.Role.USER, user_interface_1.Role.AGENT), (0, validateRequest_1.validateRequest)(transaction_validation_1.addMoneyValidationSchema), transaction_controller_1.TransactionControllers.addMoney);
 router.post("/withdraw-money", (0, checkAuth_1.default)(user_interface_1.Role.USER, user_interface_1.Role.AGENT), (0, validateRequest_1.validateRequest)(transaction_validation_1.withdrawMoneyValidationSchema), transaction_controller_1.TransactionControllers.withdrawMoney);

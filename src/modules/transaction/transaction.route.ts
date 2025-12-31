@@ -8,16 +8,12 @@ import {
   withdrawMoneyValidationSchema,
 } from "./transaction.validation";
 import { validateRequest } from "../../middlewares/validateRequest";
-import rateLimit from "express-rate-limit";
+import { transactionRateLimiter } from "../../config/rateLimiter";
 
 const router = express.Router();
 
-const transactionRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per window per transaction routes
-});
-
 router.use(transactionRateLimiter);
+
 
 router.post(
   "/send-money",

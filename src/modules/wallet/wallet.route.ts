@@ -2,8 +2,12 @@ import { Router } from "express";
 import { Role } from "../user/user.interface";
 import { WalletControllers } from "./wallet.controller";
 import checkAuth from "../../middlewares/checkAuth";
+import { walletActionLimiter } from "../../config/rateLimiter";
 
 const router = Router();
+
+router.use(walletActionLimiter);
+
 
 router.get(
   "/me",

@@ -4,16 +4,10 @@ import checkAuth from "../../middlewares/checkAuth";
 import { validateRequest } from "../../middlewares/validateRequest";
 import { SystemConfigControllers } from "./systemConfig.controller";
 import { SystemConfigValidations } from "./systemConfig.validation";
-import rateLimit from "express-rate-limit";
+import { systemConfigUpdateLimiter } from "../../config/rateLimiter";
 
 const router = Router();
 
-const systemConfigUpdateLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 50, // limit each IP to 50 update requests per windowMs
-    standardHeaders: true,
-    legacyHeaders: false,
-});
 
 /**
  * Get current system configuration
