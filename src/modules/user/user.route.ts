@@ -7,6 +7,7 @@ import {
   createAdminZodSchema,
   suspendAgentZodSchema,
   updatePasswordZodSchema,
+  updateUserZodSchema,
 } from "./user.validation";
 import { validateRequest } from "../../middlewares/validateRequest";
 import { adminActionLimiter, selfActionLimiter } from "../../config/rateLimiter";
@@ -24,6 +25,7 @@ router.patch(
   "/me",
   selfActionLimiter,
   checkAuth(Role.USER, Role.ADMIN, Role.AGENT, Role.SUPER_ADMIN),
+  validateRequest(updateUserZodSchema),
   UserControllers.updateMyProfile,
 );
 
@@ -51,16 +53,19 @@ router.get(
 );
 router.patch(
   "/:id/block",
+  adminActionLimiter,
   checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
   UserControllers.blockUser,
 );
 router.patch(
   "/:id/unblock",
+  adminActionLimiter,
   checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
   UserControllers.unblockUser,
 );
 router.patch(
   "/:id/approval",
+  adminActionLimiter,
   checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
   validateRequest(agentApprovalZodSchema),
   UserControllers.agentApprovalByAdmin,
@@ -68,6 +73,7 @@ router.patch(
 
 router.patch(
   "/:id/suspend",
+  adminActionLimiter,
   checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
   validateRequest(suspendAgentZodSchema),
   UserControllers.suspendAgent,

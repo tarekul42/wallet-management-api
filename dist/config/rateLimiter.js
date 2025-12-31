@@ -5,7 +5,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.walletActionLimiter = exports.systemConfigUpdateLimiter = exports.transactionRateLimiter = exports.selfActionLimiter = exports.adminActionLimiter = exports.authLimiter = exports.generalApiRateLimiter = void 0;
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
-const sendResponse_1 = __importDefault(require("../utils/sendResponse"));
 const http_status_codes_1 = __importDefault(require("http-status-codes"));
 const createLimiter = (max, windowMs = 15 * 60 * 1000, message = "Too many requests, Please try again later.") => {
     return (0, express_rate_limit_1.default)({
@@ -14,7 +13,7 @@ const createLimiter = (max, windowMs = 15 * 60 * 1000, message = "Too many reque
         standardHeaders: true,
         legacyHeaders: false,
         handler: (req, res) => {
-            (0, sendResponse_1.default)(res, {
+            res.status(http_status_codes_1.default.TOO_MANY_REQUESTS).json({
                 success: false,
                 statusCode: http_status_codes_1.default.TOO_MANY_REQUESTS,
                 message,

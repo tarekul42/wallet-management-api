@@ -11,7 +11,7 @@ import { notifyAgentApproved, notifyAgentSuspended } from "../../utils/notificat
 
 // Service to get a user's own profile
 const getMyProfile = async (userId: string) => {
-  const result = await User.findOne({ _id: { $eq: userId } });
+  const result = await User.findOne({ _id: { $eq: String(userId) } });
   if (!result) {
     throw new AppError(StatusCodes.NOT_FOUND, "User not found");
   }
@@ -32,7 +32,7 @@ const updateMyProfile = async (userId: string, payload: Partial<IUser>) => {
   }
 
   const result = await User.findOneAndUpdate(
-    { _id: { $eq: userId } },
+    { _id: { $eq: String(userId) } },
     updateData,
     {
       new: true,
@@ -54,7 +54,7 @@ const getAllUsers = async (query: Record<string, unknown>) => {
     if (!Object.values(Role).includes(query.role as Role)) {
       throw new AppError(StatusCodes.BAD_REQUEST, "Invalid role value");
     }
-    filter.role = { $eq: query.role as Role };
+    filter.role = { $eq: String(query.role) as Role };
   }
 
   if (query.approvalStatus) {
@@ -74,7 +74,7 @@ const getAllUsers = async (query: Record<string, unknown>) => {
         "Invalid approvalStatus value",
       );
     }
-    filter.approvalStatus = { $eq: query.approvalStatus as ApprovalStatus };
+    filter.approvalStatus = { $eq: String(query.approvalStatus) as ApprovalStatus };
   }
 
   const result = await User.find(filter);
@@ -86,7 +86,7 @@ const updateUserStatus = async (
   newStatus: IsActive.ACTIVE | IsActive.BLOCKED,
   currentUserId?: string,
 ) => {
-  const targetUser = await User.findOne({ _id: { $eq: targetUserId } });
+  const targetUser = await User.findOne({ _id: { $eq: String(targetUserId) } });
   if (!targetUser) {
     throw new AppError(StatusCodes.NOT_FOUND, "Target user not found");
   }
@@ -158,7 +158,7 @@ const agentApprovalByAdmin = async (
   userId: string,
   payload: { approvalStatus: ApprovalStatus; commissionRate?: number },
 ) => {
-  const agent = await User.findOne({ _id: { $eq: userId } });
+  const agent = await User.findOne({ _id: { $eq: String(userId) } });
 
   if (!agent) {
     throw new AppError(StatusCodes.NOT_FOUND, "Agent not found");
@@ -212,7 +212,7 @@ const suspendAgent = async (
   agentId: string,
   newStatus: ApprovalStatus.SUSPENDED | ApprovalStatus.APPROVED,
 ) => {
-  const agent = await User.findOne({ _id: { $eq: agentId } });
+  const agent = await User.findOne({ _id: { $eq: String(agentId) } });
 
   if (!agent) {
     throw new AppError(StatusCodes.NOT_FOUND, "Agent not found");
@@ -273,7 +273,7 @@ const updatePassword = async (
   userId: string,
   payload: IUpdatePasswordPayload,
 ) => {
-  const user = await User.findOne({ _id: { $eq: userId } }).select("+password");
+  const user = await User.findOne({ _id: { $eq: String(userId) } }).select("+password");
   if (!user) {
     throw new AppError(StatusCodes.NOT_FOUND, "User not found");
   }

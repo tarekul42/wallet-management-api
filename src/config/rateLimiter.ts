@@ -10,7 +10,7 @@ const createLimiter = (max: number, windowMs: number = 15 * 60 * 1000, message: 
     standardHeaders: true,
     legacyHeaders: false,
     handler: (req: Request, res: Response) => {
-      sendResponse(res, {
+      res.status(httpStatus.TOO_MANY_REQUESTS).json({
         success: false,
         statusCode: httpStatus.TOO_MANY_REQUESTS,
         message,
