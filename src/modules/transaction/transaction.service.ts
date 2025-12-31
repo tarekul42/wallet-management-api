@@ -410,6 +410,13 @@ const withdrawMoney = async (
           "'fromId' is required for agents",
         );
       }
+      // Validate and safely cast fromId before using it in any database query
+      if (typeof fromId !== "string" || !mongoose.Types.ObjectId.isValid(fromId)) {
+        throw new AppError(
+          StatusCodes.BAD_REQUEST,
+          "Invalid 'fromId' format",
+        );
+      }
       fromUser = await User.findOne({ _id: { $eq: String(fromId) } }).session(session);
       if (!fromUser) {
         throw new AppError(
