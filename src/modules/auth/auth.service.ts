@@ -19,8 +19,17 @@ const getNewAccessToken = async (refreshToken: string) => {
 };
 
 const registerUser = async (payload: IUser) => {
+  const email = payload.email;
+
+  if (typeof email !== "string" || email.trim() === "") {
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      "A valid email address must be provided."
+    );
+  }
+
   // check if user exists
-  const user = await User.findOne({ email: payload.email });
+  const user = await User.findOne({ email });
 
   if (user) {
     throw new AppError(
@@ -40,7 +49,7 @@ const registerUser = async (payload: IUser) => {
   // Sanitize payload to prevent mass assignment
   const userData: Partial<IUser> = {
     name: payload.name,
-    email: payload.email,
+    email,
     password: payload.password,
     phone: payload.phone,
     address: payload.address,
