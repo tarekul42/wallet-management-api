@@ -290,7 +290,16 @@ const updatePassword = async (
 };
 
 const createAdmin = async (payload: IUser) => {
-  const user = await User.findOne({ email: payload.email });
+  if (typeof payload.email !== "string") {
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      "Invalid email format.",
+    );
+  }
+
+  const normalizedEmail = payload.email.trim().toLowerCase();
+
+  const user = await User.findOne({ email: { $eq: normalizedEmail } });
 
   if (user) {
     throw new AppError(
@@ -314,7 +323,7 @@ const createAdmin = async (payload: IUser) => {
 
     const adminData: Partial<IUser> = {
       name: payload.name,
-      email: payload.email,
+      email: normalizedEmail,
       password: payload.password,
       phone: payload.phone,
       role: payload.role,
