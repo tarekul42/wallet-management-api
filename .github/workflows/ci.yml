@@ -5,6 +5,8 @@ on:
       - main
 
 name: CI
+permissions:
+  contents: read
 
 jobs:
   build:
