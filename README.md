@@ -1,6 +1,6 @@
 # Wallet Management API
 
-[![CI](https://github.com/username/wallet-management-api/actions/workflows/ci.yml/badge.svg)](https://github.com/username/wallet-management-api/actions/workflows/ci.yml)
+[![CI](https://github.com/tarekul42/wallet-management-api/actions/workflows/ci.yml/badge.svg)](https://github.com/tarekul42/wallet-management-api/actions/workflows/ci.yml)
 ![Node.js](https://img.shields.io/badge/Node.js-18.x-green)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue)
 ![License](https://img.shields.io/badge/License-ISC-yellow)
@@ -66,7 +66,7 @@ A robust, production-ready REST API for managing digital wallets, user authentic
 ### 1. Clone & Install
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/tarekul42/wallet-management-api
 cd wallet-management-api
 npm install
 ```
