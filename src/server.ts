@@ -44,7 +44,10 @@ const gracefulShutdown = async (signal: string, error?: Error) => {
 
 const startServer = async () => {
   try {
-    await mongoose.connect(envVars.DB_URL);
+    await mongoose.connect(envVars.DB_URL, {
+      tlsAllowInvalidCertificates: envVars.NODE_ENV === "development",
+      tlsAllowInvalidHostnames: envVars.NODE_ENV === "development",
+    });
     console.info("Connected to MongoDB!");
 
     server = app.listen(envVars.PORT, () => {
