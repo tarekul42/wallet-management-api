@@ -1,4 +1,6 @@
 import { NextFunction, Request, Response } from "express";
+import mongoose from "mongoose";
+import { ZodError } from "zod";
 import { envVars } from "../config/env";
 import { TErrorSources } from "../interfaces/error.types";
 import handleDuplicateError from "../helpers/handleDuplicacteError";
@@ -26,16 +28,16 @@ const globalErrorHandler = (
     const simplifiedError = handleDuplicateError(err);
     statusCode = simplifiedError.statusCode;
     message = simplifiedError.message;
-  } else if (error.name === "CastError") {
+  } else if (err instanceof mongoose.Error.CastError) {
     const simplifiedError = handleCastError(err);
     statusCode = simplifiedError.statusCode;
     message = simplifiedError.message;
-  } else if (error.name === "ZodError") {
+  } else if (err instanceof ZodError) {
     const simplifiedError = handleZodError(err);
     statusCode = simplifiedError.statusCode;
     message = simplifiedError.message;
     errorSources = simplifiedError.errorSources as TErrorSources[];
-  } else if (error.name === "ValidationError") {
+  } else if (err instanceof mongoose.Error.ValidationError) {
     const simplifiedError = handleValidationError(err);
     statusCode = simplifiedError.statusCode;
     message = simplifiedError.message;

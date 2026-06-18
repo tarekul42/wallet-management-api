@@ -30,7 +30,7 @@ const getAllWallets = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getSingleWallet = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const result = await WalletServices.getSingleWallet(id);
 
   sendResponse(res, {
@@ -42,7 +42,7 @@ const getSingleWallet = catchAsync(async (req: Request, res: Response) => {
 });
 
 const blockWallet = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const result = await WalletServices.blockWallet(id);
 
   sendResponse(res, {
@@ -54,7 +54,7 @@ const blockWallet = catchAsync(async (req: Request, res: Response) => {
 });
 
 const unblockWallet = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const result = await WalletServices.unblockWallet(id);
 
   sendResponse(res, {

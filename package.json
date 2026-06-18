@@ -7,7 +7,7 @@
     "dev": "bun --watch src/server.ts",
     "build": "bun build ./src/server.ts --outdir ./dist --target bun",
     "start": "bun dist/server.js",
-    "test": "echo \"No tests specified yet\" && exit 0",
+    "test": "bun test",
     "seed": "bun scripts/seed.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
@@ -28,8 +28,11 @@
     "@types/passport": "^1.0.17",
     "@types/passport-google-oauth20": "^2.0.16",
     "@types/passport-local": "^1.0.38",
+    "@types/supertest": "^7.2.0",
     "@types/uuid": "^10.0.0",
+    "@vitest/coverage-v8": "^4.1.9",
     "eslint": "^9.32.0",
+    "supertest": "^7.2.2",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0"
   },

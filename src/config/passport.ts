@@ -1,8 +1,25 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { User } from "../modules/user/user.model";
-import { IsActive } from "../modules/user/user.interface";
+import { IsActive, Role } from "../modules/user/user.interface";
 import bcrypt from "bcryptjs";
+import { envVars } from "./env";
+import { Types } from "mongoose";
+
+passport.serializeUser((user: unknown, done) => {
+  const u = user as { _id: Types.ObjectId };
+  done(null, u._id.toString());
+});
+
+passport.deserializeUser(async (id: string, done) => {
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (error) {
+    done(error, null);
+  }
+});
 
 passport.use(
   new LocalStrategy(
@@ -50,3 +67,39 @@ passport.use(
     },
   ),
 );
+
+if (envVars.GOOGLE_CLIENT_ID && envVars.GOOGLE_CLIENT_SECRET) {
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: envVars.GOOGLE_CLIENT_ID,
+        clientSecret: envVars.GOOGLE_CLIENT_SECRET,
+        callbackURL: envVars.GOOGLE_CALLBACK_URL,
+      },
+      async (_accessToken, _refreshToken, profile, done) => {
+        try {
+          const email = profile.emails?.[0]?.value;
+          if (!email) {
+            return done(new Error("No email found in Google profile"), undefined);
+          }
+
+          let user = await User.findOne({ email });
+
+          if (!user) {
+            user = await User.create({
+              name: profile.displayName,
+              email,
+              role: Role.USER,
+              isVerified: true,
+              isActive: IsActive.ACTIVE,
+            });
+          }
+
+          return done(null, user);
+        } catch (error) {
+          return done(error as Error, undefined);
+        }
+      },
+    ),
+  );
+}

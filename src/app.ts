@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
+import session from "express-session";
 import { generalApiRateLimiter } from "./config/rateLimiter";
 import router from "./routes";
 import notFound from "./middlewares/notFound";
@@ -24,7 +25,16 @@ app.use(
 );
 app.use(helmet());
 app.use(generalApiRateLimiter);
+app.use(
+  session({
+    secret: envVars.EXPRESS_SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: envVars.NODE_ENV === "production" },
+  })
+);
 app.use(passport.initialize());
+app.use(passport.session());
 
 app.get("/", (req: Request, res: Response) => {
   res.status(200).json({ message: "Welcome to the Wallet Management API!" });
