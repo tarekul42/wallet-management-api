@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 import helmet from "helmet";
+import cookieParser from "cookie-parser";
 import { generalApiRateLimiter } from "./config/rateLimiter";
 import router from "./routes";
 import notFound from "./middlewares/notFound";
@@ -12,6 +13,7 @@ import "./config/passport";
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
 app.use(
   cors({
     origin: envVars.CORS_ORIGIN.split(","),
