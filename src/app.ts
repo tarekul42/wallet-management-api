@@ -6,12 +6,20 @@ import router from "./routes";
 import notFound from "./middlewares/notFound";
 import globalErrorHandler from "./middlewares/globalErrorHandler";
 import passport from "passport";
+import { envVars } from "./config/env";
 import "./config/passport";
 
 const app = express();
 
 app.use(express.json());
-app.use(cors());
+app.use(
+  cors({
+    origin: envVars.CORS_ORIGIN.split(","),
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 app.use(helmet());
 app.use(generalApiRateLimiter);
 app.use(passport.initialize());

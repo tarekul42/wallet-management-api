@@ -91,9 +91,18 @@ const logoutUser = catchAsync(async (req: Request, res: Response) => {
     await AuthServices.logoutUser(refreshToken);
   }
 
+  const isProduction = envVars.NODE_ENV === "production";
+  const cookieOptions = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "strict" as const : "lax" as const,
+    domain: envVars.COOKIE_DOMAIN,
+    path: "/",
+  };
+
   // Clear cookies
-  res.clearCookie("accessToken", { httpOnly: true, secure: false }); // secure should be true in production
-  res.clearCookie("refreshToken", { httpOnly: true, secure: false });
+  res.clearCookie("accessToken", cookieOptions);
+  res.clearCookie("refreshToken", cookieOptions);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -141,9 +150,9 @@ const resetPassword = catchAsync(async (req: Request, res: Response) => {
 
 const getDemoUsers = catchAsync(async (req: Request, res: Response) => {
   const demoUsers = [
-    { label: "Demo User", email: envVars.DEMO_USER_EMAIL, password: envVars.DEMO_USER_PASSWORD, role: "USER" },
-    { label: "Demo Agent", email: envVars.DEMO_AGENT_EMAIL, password: envVars.DEMO_AGENT_PASSWORD, role: "AGENT" },
-    { label: "Demo Admin", email: envVars.DEMO_ADMIN_EMAIL, password: envVars.DEMO_ADMIN_PASSWORD, role: "ADMIN" },
+    { label: "Demo User", email: envVars.DEMO_USER_EMAIL, role: "USER" },
+    { label: "Demo Agent", email: envVars.DEMO_AGENT_EMAIL, role: "AGENT" },
+    { label: "Demo Admin", email: envVars.DEMO_ADMIN_EMAIL, role: "ADMIN" },
   ];
 
   sendResponse(res, {

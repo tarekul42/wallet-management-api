@@ -56,7 +56,7 @@ const globalErrorHandler = (
     message = err.message;
   } else if (err instanceof Error) {
     statusCode = 500;
-    message = err.message;
+    message = envVars.NODE_ENV === "development" ? err.message : "Something went wrong";
   }
 
   res.status(statusCode).json({

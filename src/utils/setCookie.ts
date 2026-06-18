@@ -7,11 +7,15 @@ export interface AuthTokens {
 }
 
 const setAuthCookie = (res: Response, tokenInfo: AuthTokens) => {
+  const isProduction = envVars.NODE_ENV === "production";
+  
   const cookieOptions = {
     httpOnly: true,
-    secure: envVars.NODE_ENV === "production",
-    sameSite: "none" as const,
-    maxAge: 1000 * 60 * 60 * 24,
+    secure: isProduction,
+    sameSite: isProduction ? "strict" as const : "lax" as const,
+    domain: envVars.COOKIE_DOMAIN,
+    path: "/",
+    maxAge: 1000 * 60 * 60 * 24, // 24 hours
   };
 
   if (tokenInfo.accessToken) {
@@ -19,7 +23,10 @@ const setAuthCookie = (res: Response, tokenInfo: AuthTokens) => {
   }
 
   if (tokenInfo.refreshToken) {
-    res.cookie("refreshToken", tokenInfo.refreshToken, cookieOptions);
+    res.cookie("refreshToken", tokenInfo.refreshToken, {
+      ...cookieOptions,
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days for refresh token
+    });
   }
 };
 
