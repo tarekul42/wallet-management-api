@@ -12,15 +12,13 @@ const gracefulShutdown = async (signal: string, error?: Error) => {
     console.info(`${signal} signal received. Server shutting down...`);
   }
 
-  // Allow time for cleanup, then force exit
-  setTimeout(() => {
+  const forceExitTimeout = setTimeout(() => {
     console.warn("Shutdown timed out. Forcing exit.");
     process.exit(1);
-  }, 10000).unref(); // .unref() allows the process to exit if it finishes before the timeout
+  }, 10000).unref();
 
   try {
-    // 1. Stop the server from accepting new connections
-    if (server) {
+    if (server && server.listening) {
       await new Promise<void>((resolve, reject) => {
         server.close((err) => {
           if (err) {
@@ -32,16 +30,15 @@ const gracefulShutdown = async (signal: string, error?: Error) => {
       });
     }
 
-    // 2. Close the database connection
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.close();
       console.info("Database connection closed.");
     }
   } catch (shutdownError) {
     console.error("Error during graceful shutdown:", shutdownError);
-    process.exit(1);
   }
 
+  clearTimeout(forceExitTimeout);
   process.exit(error ? 1 : 0);
 };
 
@@ -55,7 +52,6 @@ const startServer = async () => {
     });
   } catch (error) {
     console.error("Failed to start server:", error);
-    // Ensure DB connection is closed if startup fails
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.close();
     }
@@ -68,8 +64,9 @@ startServer();
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 process.on("unhandledRejection", (reason) => {
-  gracefulShutdown("unhandledRejection", reason as Error);
+  console.error("Unhandled Rejection:", reason);
 });
 process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
   gracefulShutdown("uncaughtException", error);
 });

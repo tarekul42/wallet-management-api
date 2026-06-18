@@ -26,13 +26,13 @@ app.use(helmet());
 app.use(generalApiRateLimiter);
 app.use(passport.initialize());
 
-app.use("/api/v1", router);
-
 app.get("/", (req: Request, res: Response) => {
   res.status(200).json({ message: "Welcome to the Wallet Management API!" });
 });
 
-app.use(globalErrorHandler);
+app.use("/api/v1", router);
+
 app.use(notFound);
+app.use(globalErrorHandler);
 
 export default app;
