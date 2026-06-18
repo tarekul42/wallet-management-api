@@ -31,7 +31,7 @@ const getSpendingOverview = async (userId: string) => {
     }
   }
 
-  const data = Object.entries(dailyMap).map(([dateStr, val], idx) => ({
+  const data = Object.entries(dailyMap).map(([dateStr, val]) => ({
     name: DAYS[new Date(dateStr).getDay()],
     income: val.income,
     expenses: val.expenses,
