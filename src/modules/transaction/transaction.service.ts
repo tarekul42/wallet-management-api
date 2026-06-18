@@ -40,13 +40,12 @@ const checkAndUpdateTransactionLimits = async (
     type: { $in: [TransactionType.SEND_MONEY, TransactionType.CASH_OUT, TransactionType.WITHDRAW] },
   };
 
-  // Calculate daily total
-  const dailyTransactions = await Transaction.find({
-    ...filterBase,
-    createdAt: { $gte: startOfDay },
-  }).session(session || null);
-
-  const dailyTotal = dailyTransactions.reduce((sum, t) => sum + t.amount, 0);
+  // Calculate daily total via aggregation
+  const [dailyResult] = await Transaction.aggregate([
+    { $match: { ...filterBase, createdAt: { $gte: startOfDay } } },
+    { $group: { _id: null, total: { $sum: "$amount" } } },
+  ]).session(session || null);
+  const dailyTotal = dailyResult?.total ?? 0;
 
   if (dailyTotal + amount > config.dailyLimit) {
     throw new AppError(
@@ -55,13 +54,12 @@ const checkAndUpdateTransactionLimits = async (
     );
   }
 
-  // Calculate monthly total
-  const monthlyTransactions = await Transaction.find({
-    ...filterBase,
-    createdAt: { $gte: startOfMonth },
-  }).session(session || null);
-
-  const monthlyTotal = monthlyTransactions.reduce((sum, t) => sum + t.amount, 0);
+  // Calculate monthly total via aggregation
+  const [monthlyResult] = await Transaction.aggregate([
+    { $match: { ...filterBase, createdAt: { $gte: startOfMonth } } },
+    { $group: { _id: null, total: { $sum: "$amount" } } },
+  ]).session(session || null);
+  const monthlyTotal = monthlyResult?.total ?? 0;
 
   if (monthlyTotal + amount > config.monthlyLimit) {
     throw new AppError(

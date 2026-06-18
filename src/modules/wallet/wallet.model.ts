@@ -17,4 +17,7 @@ const walletSchema = new Schema<IWallet>(
   }
 );
 
+walletSchema.index({ owner: 1 }, { unique: true });
+walletSchema.index({ status: 1 });
+
 export const Wallet = model<IWallet>("Wallet", walletSchema);

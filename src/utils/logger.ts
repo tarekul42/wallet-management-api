@@ -7,10 +7,10 @@ const logger = {
     if (isDev()) console.info(...args);
   },
   error: (...args: unknown[]) => {
-    if (isDev()) console.error(...args);
+    console.error(...args);
   },
   warn: (...args: unknown[]) => {
-    if (isDev()) console.warn(...args);
+    console.warn(...args);
   },
   log: (...args: unknown[]) => {
     if (isDev()) console.log(...args);

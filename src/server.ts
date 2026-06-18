@@ -69,6 +69,7 @@ process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 process.on("unhandledRejection", (reason) => {
   logger.error("Unhandled Rejection:", reason);
+  gracefulShutdown("unhandledRejection", reason instanceof Error ? reason : new Error(String(reason)));
 });
 process.on("uncaughtException", (error) => {
   logger.error("Uncaught Exception:", error);

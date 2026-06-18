@@ -37,10 +37,7 @@ export const updateUserZodSchema = z.object({
     .length(10, { message: "NID must be exactly 10 digits" })
     .regex(/^\d+$/, { message: "NID must contain only digits" })
     .optional(),
-  role: z.enum(Object.values(Role) as [string, ...string[]]).optional(),
-  isActive: z.enum(Object.values(IsActive) as [string, ...string[]]).optional(),
-  isDeleted: z.boolean().optional(),
-  isVerified: z.boolean().optional(),
+
 });
 
 export const updatePasswordZodSchema = z
@@ -64,20 +61,14 @@ export const updatePasswordZodSchema = z
 // - `approveAgentZodSchema` ensures the request sets status to APPROVED.
 // This avoids a dual-purpose schema that can be misleading about intent.
 export const suspendAgentZodSchema = z.object({
-  body: z.object({
-    status: z.literal(ApprovalStatus.SUSPENDED),
-  }),
+  status: z.literal(ApprovalStatus.SUSPENDED),
 });
 
 export const approveAgentZodSchema = z.object({
-  body: z.object({
-    status: z.literal(ApprovalStatus.APPROVED),
-  }),
+  status: z.literal(ApprovalStatus.APPROVED),
 });
 
 export const agentApprovalZodSchema = z.object({
-  approvalStatus: z.enum(
-    Object.values(ApprovalStatus) as [string, ...string[]],
-  ),
+  approvalStatus: z.enum([ApprovalStatus.APPROVED, ApprovalStatus.REJECTED]),
   commissionRate: z.number().positive().optional(),
 });

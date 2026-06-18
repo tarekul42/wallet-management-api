@@ -120,7 +120,7 @@ const logoutUser = async (refreshToken: string) => {
       refreshToken,
       envVars.JWT_REFRESH_SECRET
     );
-    const userId = decodedToken.id;
+    const userId = decodedToken.userId;
 
     await User.findByIdAndUpdate(userId, { $inc: { tokenVersion: 1 } });
 
