@@ -8,6 +8,7 @@ import handleCastError from "../helpers/handleCastError";
 import handleZodError from "../helpers/handleZodError";
 import handleValidationError from "../helpers/handleValidationError";
 import AppError from "../errorHelpers/AppError";
+import logger from "../utils/logger";
 
 const globalErrorHandler = (
   err: any,
@@ -15,9 +16,7 @@ const globalErrorHandler = (
   res: Response,
   next: NextFunction,
 ) => {
-  if (envVars.NODE_ENV === "development") {
-    console.log(err);
-  }
+  logger.log(err);
 
   let errorSources: TErrorSources[] = [];
   let statusCode = 500;

@@ -11,16 +11,15 @@ interface NotificationData {
     [key: string]: string | number;
 }
 
-/**
- * Log a notification to the console
- */
+import logger from "./logger";
+
 const logNotification = (type: string, to: string, message: string) => {
-    console.log("\n🔔 ================ NOTIFICATION ================");
-    console.log(`Type: ${type}`);
-    console.log(`To: ${to}`);
-    console.log(`Message: ${message}`);
-    console.log("Time:", new Date().toISOString());
-    console.log("===============================================\n");
+    logger.log("\n🔔 ================ NOTIFICATION ================");
+    logger.log(`Type: ${type}`);
+    logger.log(`To: ${to}`);
+    logger.log(`Message: ${message}`);
+    logger.log("Time:", new Date().toISOString());
+    logger.log("===============================================\n");
 };
 
 /**
