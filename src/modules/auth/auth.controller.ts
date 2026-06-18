@@ -9,6 +9,7 @@ import setAuthCookie from "../../utils/setCookie";
 import { IUser } from "../user/user.interface";
 import { AuthServices } from "./auth.service";
 import { Document } from "mongoose";
+import { envVars } from "../../config/env";
 
 const getNewAccessToken = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -138,6 +139,21 @@ const resetPassword = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getDemoUsers = catchAsync(async (req: Request, res: Response) => {
+  const demoUsers = [
+    { label: "Demo User", email: envVars.DEMO_USER_EMAIL, password: envVars.DEMO_USER_PASSWORD, role: "USER" },
+    { label: "Demo Agent", email: envVars.DEMO_AGENT_EMAIL, password: envVars.DEMO_AGENT_PASSWORD, role: "AGENT" },
+    { label: "Demo Admin", email: envVars.DEMO_ADMIN_EMAIL, password: envVars.DEMO_ADMIN_PASSWORD, role: "ADMIN" },
+  ];
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Demo users retrieved successfully",
+    data: demoUsers,
+  });
+});
+
 export const AuthControllers = {
   getNewAccessToken,
   registerUser,
@@ -146,4 +162,5 @@ export const AuthControllers = {
   verifyEmail,
   forgotPassword,
   resetPassword,
+  getDemoUsers,
 };

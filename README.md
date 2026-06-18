@@ -1,7 +1,7 @@
 # Wallet Management API
 
 [![CI](https://github.com/tarekul42/wallet-management-api/actions/workflows/ci.yml/badge.svg)](https://github.com/tarekul42/wallet-management-api/actions/workflows/ci.yml)
-![Node.js](https://img.shields.io/badge/Node.js-18.x-green)
+![Bun](https://img.shields.io/badge/Bun-1.x-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue)
 ![License](https://img.shields.io/badge/License-ISC-yellow)
 
@@ -43,7 +43,7 @@ A robust, production-ready REST API for managing digital wallets, user authentic
 
 | Category | Technology |
 |----------|------------|
-| Runtime | Node.js |
+| Runtime | Bun |
 | Framework | Express 5 |
 | Language | TypeScript |
 | Database | MongoDB (Mongoose) |
@@ -55,9 +55,8 @@ A robust, production-ready REST API for managing digital wallets, user authentic
 
 ## Prerequisites
 
-- **Node.js** 18.x or later
+- **Bun** 1.x or later
 - **MongoDB** (local instance or [MongoDB Atlas](https://www.mongodb.com/cloud/atlas))
-- **npm** 9+ or **yarn**
 
 ---
 
@@ -68,7 +67,7 @@ A robust, production-ready REST API for managing digital wallets, user authentic
 ```bash
 git clone https://github.com/tarekul42/wallet-management-api
 cd wallet-management-api
-npm install
+bun install
 ```
 
 ### 2. Environment Setup
@@ -103,11 +102,11 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 
 ```bash
 # Development (hot reload)
-npm run dev
+bun run dev
 
 # Production
-npm run build
-npm start
+bun run build
+bun start
 ```
 
 The API is available at `http://localhost:5000` (or your configured `PORT`).
@@ -167,12 +166,12 @@ src/
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start development server with hot reload |
-| `npm run build` | Compile TypeScript to JavaScript |
-| `npm start` | Run production server |
-| `npm run lint` | Run ESLint |
-| `npm run lint:fix` | Run ESLint with auto-fix |
-| `npm test` | Run tests |
+| `bun run dev` | Start development server with hot reload |
+| `bun run build` | Compile TypeScript to JavaScript |
+| `bun start` | Run production server |
+| `bun run lint` | Run ESLint |
+| `bun run lint:fix` | Run ESLint with auto-fix |
+| `bun test` | Run tests |
 
 ---
 
@@ -180,7 +179,7 @@ src/
 
 GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push to `main` and on pull requests:
 
-- Install dependencies (`npm ci`)
+- Install dependencies (`bun install`)
 - TypeScript type check (`tsc --noEmit`)
 - ESLint
 - Tests

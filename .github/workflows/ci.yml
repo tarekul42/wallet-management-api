@@ -10,33 +10,29 @@ jobs:
   build:
     name: Build & Check
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [18.x]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: "npm"
+          bun-version: latest
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install
 
       - name: TypeScript check
         run: |
           if [ -f tsconfig.json ]; then
-            npx tsc --noEmit
+            bun tsc --noEmit
           else
             echo "No tsconfig.json — skipping tsc check"
           fi
 
       - name: Lint
         run: |
-          if npm run -s lint --if-present; then
+          if bun run lint --if-present; then
             echo "Lint passed (or no lint script)"
           else
             exit 1
@@ -44,7 +40,7 @@ jobs:
 
       - name: Run tests
         run: |
-          if npm test --if-present; then
+          if bun test --if-present; then
             echo "Tests passed (or no test script)"
           else
             exit 1
@@ -52,7 +48,7 @@ jobs:
 
       - name: Build
         run: |
-          if npm run -s build --if-present; then
+          if bun run build --if-present; then
             echo "Build succeeded (or no build script)"
           else
             exit 1

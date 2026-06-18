@@ -56,4 +56,6 @@ router.post(
   AuthControllers.resetPassword,
 );
 
+router.get("/demo-users", AuthControllers.getDemoUsers);
+
 export const AuthRoutes = router;

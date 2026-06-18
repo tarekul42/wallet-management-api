@@ -14,6 +14,12 @@ interface EnvVariables {
   SUPER_ADMIN_EMAIL: string;
   SUPER_ADMIN_PASSWORD: string;
   EXPRESS_SESSION_SECRET: string;
+  DEMO_USER_EMAIL: string;
+  DEMO_USER_PASSWORD: string;
+  DEMO_AGENT_EMAIL: string;
+  DEMO_AGENT_PASSWORD: string;
+  DEMO_ADMIN_EMAIL: string;
+  DEMO_ADMIN_PASSWORD: string;
 }
 
 const loadEnvVariables = (): EnvVariables => {
@@ -59,6 +65,12 @@ const loadEnvVariables = (): EnvVariables => {
     SUPER_ADMIN_EMAIL: process.env.SUPER_ADMIN_EMAIL as string,
     SUPER_ADMIN_PASSWORD: process.env.SUPER_ADMIN_PASSWORD as string,
     EXPRESS_SESSION_SECRET: process.env.EXPRESS_SESSION_SECRET as string,
+    DEMO_USER_EMAIL: process.env.DEMO_USER_EMAIL || "demo.user@example.com",
+    DEMO_USER_PASSWORD: process.env.DEMO_USER_PASSWORD || "DemoUser123!",
+    DEMO_AGENT_EMAIL: process.env.DEMO_AGENT_EMAIL || "demo.agent@example.com",
+    DEMO_AGENT_PASSWORD: process.env.DEMO_AGENT_PASSWORD || "DemoAgent123!",
+    DEMO_ADMIN_EMAIL: process.env.DEMO_ADMIN_EMAIL || "demo.admin@example.com",
+    DEMO_ADMIN_PASSWORD: process.env.DEMO_ADMIN_PASSWORD || "DemoAdmin123!",
   };
 };
 
