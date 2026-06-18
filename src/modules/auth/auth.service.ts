@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { StatusCodes } from "http-status-codes";
-import mongoose from "mongoose";
+import mongoose, { Document } from "mongoose";
 import AppError from "../../errorHelpers/AppError";
 import { ApprovalStatus, IUser } from "../user/user.interface";
 import { User } from "../user/user.model";
@@ -104,7 +102,7 @@ const registerUser = async (payload: IUser) => {
   return result;
 };
 
-const credentialsLogin = async (user: any) => {
+const credentialsLogin = async (user: IUser & Document) => {
   const userTokens = createUserTokens(user);
 
   const userObject = user.toObject();

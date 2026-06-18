@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import bcrypt from "bcryptjs";
 import { model, Schema } from "mongoose";
 import { ApprovalStatus, IsActive, IUser, Role } from "./user.interface";
@@ -31,7 +30,7 @@ const userSchema = new Schema<IUser>(
     },
     nid: {
       type: String,
-      required: function (this: any): boolean {
+      required: function (this: IUser): boolean {
         return this.role === Role.USER || this.role === Role.AGENT;
       }, // so that, admins will be able to add without nid requirement
     },
@@ -66,7 +65,7 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: Object.values(ApprovalStatus),
       default: null,
-      required: function (this: any): boolean {
+      required: function (this: IUser): boolean {
         return this.role === Role.AGENT;
       },
     },

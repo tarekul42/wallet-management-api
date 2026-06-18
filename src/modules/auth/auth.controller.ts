@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextFunction, Request, Response } from "express";
 import httpStatus from "http-status-codes";
 import passport from "passport";
@@ -12,7 +11,7 @@ import { Document } from "mongoose";
 import { envVars } from "../../config/env";
 
 const getNewAccessToken = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response) => {
     const refreshToken = req.cookies.refreshToken;
     if (!refreshToken) {
       throw new AppError(
@@ -148,7 +147,7 @@ const resetPassword = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const getDemoUsers = catchAsync(async (req: Request, res: Response) => {
+const getDemoUsers = catchAsync(async (_req: Request, res: Response) => {
   const demoUsers = [
     { label: "Demo User", email: envVars.DEMO_USER_EMAIL, role: "USER" },
     { label: "Demo Agent", email: envVars.DEMO_AGENT_EMAIL, role: "AGENT" },

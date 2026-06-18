@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextFunction, Request, Response } from "express";
 import { envVars } from "../config/env";
 import { TErrorSources } from "../interfaces/error.types";
@@ -11,10 +9,10 @@ import AppError from "../errorHelpers/AppError";
 import logger from "../utils/logger";
 
 const globalErrorHandler = (
-  err: any,
+  err: unknown,
   req: Request,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ) => {
   logger.log(err);
 
@@ -22,30 +20,22 @@ const globalErrorHandler = (
   let statusCode = 500;
   let message = "Something went wrong";
 
-  // duplicate error handling logic
-  if (err.code === 11000) {
+  const error = err as Record<string, unknown>;
+
+  if (error.code === 11000) {
     const simplifiedError = handleDuplicateError(err);
     statusCode = simplifiedError.statusCode;
     message = simplifiedError.message;
-  }
-
-  // objectid/cast error
-  else if (err.name === "CastError") {
+  } else if (error.name === "CastError") {
     const simplifiedError = handleCastError(err);
     statusCode = simplifiedError.statusCode;
     message = simplifiedError.message;
-  }
-
-  // handle zod error
-  else if (err.name === "ZodError") {
+  } else if (error.name === "ZodError") {
     const simplifiedError = handleZodError(err);
     statusCode = simplifiedError.statusCode;
     message = simplifiedError.message;
     errorSources = simplifiedError.errorSources as TErrorSources[];
-  }
-
-  // mongoose validation error
-  else if (err.name === "ValidationError") {
+  } else if (error.name === "ValidationError") {
     const simplifiedError = handleValidationError(err);
     statusCode = simplifiedError.statusCode;
     message = simplifiedError.message;
@@ -63,7 +53,7 @@ const globalErrorHandler = (
     message,
     errorSources,
     err: envVars.NODE_ENV === "development" ? err : null,
-    stack: envVars.NODE_ENV === "development" ? err.stack : null,
+    stack: envVars.NODE_ENV === "development" ? (err as Error).stack : null,
   });
 };
 
