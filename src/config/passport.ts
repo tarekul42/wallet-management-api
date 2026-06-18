@@ -1,6 +1,7 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import { Strategy as FacebookStrategy } from "passport-facebook";
 import { User } from "../modules/user/user.model";
 import { IsActive, Role } from "../modules/user/user.interface";
 import bcrypt from "bcryptjs";
@@ -67,6 +68,48 @@ passport.use(
     },
   ),
 );
+
+if (envVars.FACEBOOK_APP_ID && envVars.FACEBOOK_APP_SECRET && envVars.FACEBOOK_CALLBACK_URL) {
+  passport.use(
+    new FacebookStrategy(
+      {
+        clientID: envVars.FACEBOOK_APP_ID,
+        clientSecret: envVars.FACEBOOK_APP_SECRET,
+        callbackURL: envVars.FACEBOOK_CALLBACK_URL,
+        profileFields: ["id", "displayName", "emails", "photos"],
+      },
+      async (
+        _accessToken: string,
+        _refreshToken: string,
+        profile: { emails?: Array<{ value: string }>; displayName?: string },
+        done: (error: Error | null, user?: unknown) => void,
+      ) => {
+        try {
+          const email = profile.emails?.[0]?.value;
+          if (!email) {
+            return done(new Error("No email found in Facebook profile"), undefined);
+          }
+
+          let user = await User.findOne({ email });
+
+          if (!user) {
+            user = await User.create({
+              name: profile.displayName,
+              email,
+              role: Role.USER,
+              isVerified: true,
+              isActive: IsActive.ACTIVE,
+            });
+          }
+
+          return done(null, user);
+        } catch (error) {
+          return done(error as Error, undefined);
+        }
+      },
+    ),
+  );
+}
 
 if (envVars.GOOGLE_CLIENT_ID && envVars.GOOGLE_CLIENT_SECRET) {
   passport.use(
