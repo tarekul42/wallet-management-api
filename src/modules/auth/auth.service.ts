@@ -106,7 +106,8 @@ const credentialsLogin = async (user: IUser & Document) => {
   const userTokens = createUserTokens(user);
 
   const userObject = user.toObject();
-  const { password, ...sanitizedUser } = userObject;
+  delete userObject.password;
+  const sanitizedUser = userObject;
 
   return {
     user: sanitizedUser,
@@ -125,7 +126,7 @@ const logoutUser = async (refreshToken: string) => {
     await User.findByIdAndUpdate(userId, { $inc: { tokenVersion: 1 } });
 
     return { message: "Logged out successfully." };
-  } catch (error) {
+  } catch {
     // We swallow the error and return success to prevent token enumeration/leaking state
     // If the token is invalid, the user is effectively logged out anyway
     return { message: "Logged out successfully." };

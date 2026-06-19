@@ -16,6 +16,7 @@ const globalErrorHandler = (
   res: Response,
   _next: NextFunction,
 ) => {
+  void _next;
   logger.log(err);
 
   let errorSources: TErrorSources[] = [];

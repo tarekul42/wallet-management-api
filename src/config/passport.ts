@@ -81,7 +81,7 @@ if (envVars.FACEBOOK_APP_ID && envVars.FACEBOOK_APP_SECRET && envVars.FACEBOOK_C
       async (
         _accessToken: string,
         _refreshToken: string,
-        profile: { emails?: Array<{ value: string }>; displayName?: string },
+        profile: { emails: { value: string }[] | undefined; displayName?: string },
         done: (error: Error | null, user?: unknown) => void,
       ) => {
         try {

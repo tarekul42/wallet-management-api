@@ -40,7 +40,7 @@ const createNewAccessToken = async (refreshToken: string) => {
       refreshToken,
       envVars.JWT_REFRESH_SECRET,
     ) as JwtPayload;
-  } catch (err) {
+  } catch {
     throw new AppError(
       httpStatus.UNAUTHORIZED,
       "Invalid or expired refresh token",
