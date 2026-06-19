@@ -69,7 +69,8 @@ const viewHistory = catchAsync(async (req: Request, res: Response) => {
     success: true,
     statusCode: StatusCodes.OK,
     message: "Transaction history retrieved successfully",
-    data: result,
+    meta: result.meta,
+    data: result.data,
   });
 });
 
@@ -85,7 +86,8 @@ const getCommissionHistory = catchAsync(async (req: Request, res: Response) => {
     success: true,
     statusCode: httpStatus.OK,
     message: "Commission history retrieved successfully",
-    data: result,
+    meta: result.meta,
+    data: result.data,
   });
 });
 

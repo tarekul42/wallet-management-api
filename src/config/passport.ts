@@ -1,7 +1,7 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import { Strategy as FacebookStrategy } from "passport-facebook";
+import { Strategy as FacebookStrategy, Profile as FacebookProfile } from "passport-facebook";
 import { User } from "../modules/user/user.model";
 import { IsActive, Role } from "../modules/user/user.interface";
 import bcrypt from "bcryptjs";
@@ -81,7 +81,7 @@ if (envVars.FACEBOOK_APP_ID && envVars.FACEBOOK_APP_SECRET && envVars.FACEBOOK_C
       async (
         _accessToken: string,
         _refreshToken: string,
-        profile: { emails: { value: string }[] | undefined; displayName?: string },
+        profile: FacebookProfile,
         done: (error: Error | null, user?: unknown) => void,
       ) => {
         try {

@@ -610,7 +610,7 @@ const viewHistory = async (actorId: string, query: Record<string, unknown>) => {
   const total = await Transaction.countDocuments(filter);
 
   return {
-    meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    meta: { page, limit, total, totalPage: Math.ceil(total / limit) },
     data: transactions,
   };
 };
@@ -651,7 +651,7 @@ const getCommissionHistory = async (
   const total = await Transaction.countDocuments(filter);
 
   return {
-    meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    meta: { page, limit, total, totalPage: Math.ceil(total / limit) },
     data: transactions,
   };
 };
