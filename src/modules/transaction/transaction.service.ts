@@ -237,7 +237,8 @@ const sendMoney = async (
 
     await session.commitTransaction();
 
-    return { message: "Money sent successfully" };
+    const updatedWallet = await Wallet.findById(sender.wallet._id);
+    return { message: "Money sent successfully", balance: updatedWallet?.balance ?? 0 };
   } catch (error) {
     await session.abortTransaction();
     if (error instanceof AppError) {
@@ -379,13 +380,11 @@ const addMoney = async (
 
     await session.commitTransaction();
 
-    const updatedWallet = await Wallet.findById(receiverWallet._id).session(
-      session,
-    );
+    const updatedWallet = await Wallet.findById(receiverWallet._id);
 
     return {
       message: "Money added successfully",
-      wallet: updatedWallet,
+      balance: updatedWallet?.balance ?? 0,
     };
   } catch (error) {
     await session.abortTransaction();
@@ -543,7 +542,8 @@ const withdrawMoney = async (
 
     await session.commitTransaction();
 
-    return { message: "Money withdrawn successfully" };
+    const updatedWallet = await Wallet.findById(fromWallet._id);
+    return { message: "Money withdrawn successfully", balance: updatedWallet?.balance ?? 0 };
   } catch (error) {
     await session.abortTransaction();
     if (error instanceof AppError) {
