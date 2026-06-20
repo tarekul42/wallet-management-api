@@ -9,6 +9,9 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+name: CI
+permissions:
+  contents: read
 
 jobs:
   lint:
