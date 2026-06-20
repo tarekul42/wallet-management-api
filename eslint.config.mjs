@@ -12,10 +12,7 @@ export default tseslint.config(
   tseslint.configs.stylistic,
   {
     rules: {
-      "no-console": "off", // just for testing then it will be warning.
+      "no-console": "off",
     },
-  },
-  {
-    ignores: ["dist/**"],
   },
 );

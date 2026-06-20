@@ -7,19 +7,18 @@ import { IWallet, WalletStatus } from "./wallet.interface";
 import { notifyWalletBlocked, notifyWalletUnblocked } from "../../utils/notification.utils";
 
 const getMyWallet = async (userId: string) => {
-  const user = await User.findById(userId);
+  const user = await User.findById(userId).populate<{ wallet: IWallet }>("wallet");
   if (!user) {
     throw new AppError(StatusCodes.NOT_FOUND, "User not found.");
   }
 
-  const wallet = await Wallet.findById(user.wallet);
-  if (!wallet) {
+  if (!user.wallet) {
     throw new AppError(
       StatusCodes.NOT_FOUND,
       "Wallet not found for this user."
     );
   }
-  return wallet;
+  return user.wallet;
 };
 
 const getAllWallets = async (

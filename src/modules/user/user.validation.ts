@@ -57,15 +57,9 @@ export const updatePasswordZodSchema = z
   });
 
 // Explicit schemas for agent status updates.
-// - `suspendAgentZodSchema` ensures the request sets status to SUSPENDED.
-// - `approveAgentZodSchema` ensures the request sets status to APPROVED.
-// This avoids a dual-purpose schema that can be misleading about intent.
+// These use literal-status schemas to make intent explicit.
 export const suspendAgentZodSchema = z.object({
   status: z.literal(ApprovalStatus.SUSPENDED),
-});
-
-export const approveAgentZodSchema = z.object({
-  status: z.literal(ApprovalStatus.APPROVED),
 });
 
 export const agentApprovalZodSchema = z.object({

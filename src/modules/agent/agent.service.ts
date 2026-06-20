@@ -2,13 +2,13 @@ import httpStatus from "http-status-codes";
 import mongoose from "mongoose";
 import AppError from "../../errorHelpers/AppError";
 import { User } from "../user/user.model";
-import { Wallet } from "../wallet/wallet.model";
+import { IWallet } from "../wallet/wallet.interface";
 import { Transaction } from "../transaction/transaction.model";
 import { TransactionStatus, TransactionType } from "../transaction/transaction.interface";
 import { Role } from "../user/user.interface";
 
 const getSummary = async (userId: string) => {
-  const user = await User.findById(userId);
+  const user = await User.findById(userId).populate<{ wallet: IWallet }>("wallet");
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, "User not found");
   }
@@ -16,8 +16,7 @@ const getSummary = async (userId: string) => {
     throw new AppError(httpStatus.FORBIDDEN, "Only agents can access this endpoint");
   }
 
-  const wallet = await Wallet.findById(user.wallet);
-  const currentBalance = wallet?.balance ?? 0;
+  const currentBalance = user.wallet?.balance ?? 0;
 
   const commissionResult = await Transaction.aggregate([
     {

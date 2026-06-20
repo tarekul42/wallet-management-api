@@ -13,6 +13,7 @@ import {
 } from "./transaction.interface";
 import { Role } from "../user/user.interface";
 import { SystemConfigServices } from "../systemConfig/systemConfig.service";
+import type { ISystemConfig } from "../systemConfig/systemConfig.interface";
 
 const MAX_PAGINATION_LIMIT = 100;
 
@@ -23,10 +24,9 @@ const MAX_PAGINATION_LIMIT = 100;
 const checkAndUpdateTransactionLimits = async (
   userId: string,
   amount: number,
+  config: ISystemConfig,
   session?: ClientSession,
 ) => {
-  const config = await SystemConfigServices.getSystemConfig();
-
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
@@ -40,12 +40,22 @@ const checkAndUpdateTransactionLimits = async (
     type: { $in: [TransactionType.SEND_MONEY, TransactionType.CASH_OUT, TransactionType.WITHDRAW] },
   };
 
-  // Calculate daily total via aggregation
-  const [dailyResult] = await Transaction.aggregate([
-    { $match: { ...filterBase, createdAt: { $gte: startOfDay } } },
-    { $group: { _id: null, total: { $sum: "$amount" } } },
+  const [result] = await Transaction.aggregate([
+    { $match: { ...filterBase, createdAt: { $gte: startOfMonth } } },
+    {
+      $group: {
+        _id: null,
+        daily: {
+          $sum: {
+            $cond: [{ $gte: ["$createdAt", startOfDay] }, "$amount", 0],
+          },
+        },
+        monthly: { $sum: "$amount" },
+      },
+    },
   ]).session(session || null);
-  const dailyTotal = dailyResult?.total ?? 0;
+  const dailyTotal = result?.daily ?? 0;
+  const monthlyTotal = result?.monthly ?? 0;
 
   if (dailyTotal + amount > config.dailyLimit) {
     throw new AppError(
@@ -53,13 +63,6 @@ const checkAndUpdateTransactionLimits = async (
       `Daily transaction limit exceeded. Remaining: ${config.dailyLimit - dailyTotal}`,
     );
   }
-
-  // Calculate monthly total via aggregation
-  const [monthlyResult] = await Transaction.aggregate([
-    { $match: { ...filterBase, createdAt: { $gte: startOfMonth } } },
-    { $group: { _id: null, total: { $sum: "$amount" } } },
-  ]).session(session || null);
-  const monthlyTotal = monthlyResult?.total ?? 0;
 
   if (monthlyTotal + amount > config.monthlyLimit) {
     throw new AppError(
@@ -180,10 +183,10 @@ const sendMoney = async (
     }
 
     // Check transaction limits
-    await checkAndUpdateTransactionLimits(senderId, amount, session);
+    const config = await SystemConfigServices.getSystemConfig();
+    await checkAndUpdateTransactionLimits(senderId, amount, config, session);
 
     // Get dynamic fee from SystemConfig
-    const config = await SystemConfigServices.getSystemConfig();
     const fee = amount > 100 ? config.sendMoneyFee : 0;
     const totalDeduction = amount + fee;
 
@@ -425,11 +428,13 @@ const withdrawMoney = async (
     let fromUser;
     let transactionType: TransactionType;
 
+    const config = await SystemConfigServices.getSystemConfig();
+
     if (actor.role === Role.USER) {
       fromUser = actor;
       fromWallet = actor.wallet;
       transactionType = TransactionType.WITHDRAW;
-      await checkAndUpdateTransactionLimits(actorId, amount, session);
+      await checkAndUpdateTransactionLimits(actorId, amount, config, session);
     } else if (actor.role === Role.AGENT) {
       if (!fromId) {
         throw new AppError(
@@ -437,7 +442,6 @@ const withdrawMoney = async (
           "'fromId' is required for agents",
         );
       }
-      // Validate and safely cast fromId before using it in any database query
       if (typeof fromId !== "string" || !mongoose.Types.ObjectId.isValid(fromId)) {
         throw new AppError(
           StatusCodes.BAD_REQUEST,
@@ -453,7 +457,7 @@ const withdrawMoney = async (
       }
       fromWallet = await Wallet.findOne({ owner: { $eq: String(fromId) } }).session(session);
       transactionType = TransactionType.CASH_OUT;
-      await checkAndUpdateTransactionLimits(String(fromUser._id), amount, session);
+      await checkAndUpdateTransactionLimits(String(fromUser._id), amount, config, session);
     } else {
       throw new AppError(StatusCodes.FORBIDDEN, "Admins cannot withdraw money");
     }
@@ -472,7 +476,6 @@ const withdrawMoney = async (
       );
     }
 
-    const config = await SystemConfigServices.getSystemConfig();
     const feeRate = transactionType === TransactionType.WITHDRAW ? config.withdrawFee : config.cashOutFee;
     const fee = amount * (feeRate / 100);
     const totalDeduction = amount + fee;

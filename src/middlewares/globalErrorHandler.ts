@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import { ZodError } from "zod";
 import { envVars } from "../config/env";
 import { TErrorSources } from "../interfaces/error.types";
-import handleDuplicateError from "../helpers/handleDuplicacteError";
+import handleDuplicateError from "../helpers/handleDuplicateError";
 import handleCastError from "../helpers/handleCastError";
 import handleZodError from "../helpers/handleZodError";
 import handleValidationError from "../helpers/handleValidationError";
