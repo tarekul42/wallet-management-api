@@ -75,6 +75,7 @@ async function seed() {
     const { walletBalance, ...userData } = u;
     const user = (await User.create([userData]))[0];
     const wallet = (await Wallet.create([{ owner: user._id, balance: walletBalance }]))[0];
+    await User.findByIdAndUpdate(user._id, { wallet: wallet._id });
     userMap[user.email] = { user, wallet };
     const label = u.role === Role.USER ? "USER" : u.role === Role.AGENT ? "AGENT" : u.role;
     console.log(`Created ${label}: ${u.email} / ${u.password}`);
@@ -88,7 +89,8 @@ async function seed() {
       name: "Super Admin", email: saEmail, password: envVars.SUPER_ADMIN_PASSWORD,
       role: Role.SUPER_ADMIN, isVerified: true, isActive: IsActive.ACTIVE,
     }]))[0];
-    await Wallet.create([{ owner: sa._id, balance: 0 }]);
+    const saWallet = (await Wallet.create([{ owner: sa._id, balance: 0 }]))[0];
+    await User.findByIdAndUpdate(sa._id, { wallet: saWallet._id });
     console.log(`\nCreated SUPER_ADMIN: ${saEmail}`);
   } else {
     console.log(`\nSUPER_ADMIN already exists: ${saEmail}`);

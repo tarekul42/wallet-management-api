@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import asyncHandler from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
+import { JwtPayload } from "jsonwebtoken";
 import { ServiceServices } from "./service.service";
 
 const getAll = asyncHandler(async (req: Request, res: Response) => {
@@ -62,4 +63,40 @@ const getCategories = asyncHandler(async (_req: Request, res: Response) => {
   });
 });
 
-export const ServiceControllers = { getAll, getById, getRelated, getCategories };
+const purchase = asyncHandler(async (req: Request, res: Response) => {
+  const user = req.user as JwtPayload;
+  const serviceId = req.params.id as string;
+  const { amount } = req.body;
+
+  if (typeof amount !== "number" || amount <= 0) {
+    return sendResponse(res, {
+      statusCode: 400,
+      success: false,
+      message: "A valid positive amount is required",
+      data: null,
+    });
+  }
+
+  const result = await ServiceServices.purchase(user.userId, serviceId, amount);
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: result.message,
+    data: { balance: result.balance },
+  });
+});
+
+const getMyPurchases = asyncHandler(async (req: Request, res: Response) => {
+  const user = req.user as JwtPayload;
+  const purchases = await ServiceServices.getMyPurchases(user.userId);
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Purchase history retrieved successfully",
+    data: purchases,
+  });
+});
+
+export const ServiceControllers = { getAll, getById, getRelated, getCategories, purchase, getMyPurchases };
