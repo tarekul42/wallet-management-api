@@ -7,7 +7,7 @@
     "dev": "bun --watch src/server.ts",
     "build": "bun build ./src/server.ts --outdir ./dist --target bun",
     "start": "bun dist/server.js",
-    "test": "bun test",
+    "test": "bun test --preload ./src/__tests__/setup.ts",
     "seed": "bun scripts/seed.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"

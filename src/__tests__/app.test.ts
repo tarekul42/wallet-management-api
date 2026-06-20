@@ -1,6 +1,12 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test, beforeAll } from "bun:test";
+import type { Express } from "express";
 import request from "supertest";
-import app from "../app";
+
+let app: Express;
+
+beforeAll(async () => {
+  app = (await import("../app")).default;
+});
 
 describe("Server startup", () => {
   test("GET / responds with welcome message", async () => {
