@@ -15,6 +15,14 @@ import { SystemConfigServices } from "../systemConfig/systemConfig.service";
 import { SystemSettings } from "../system-settings/system-settings.model";
 import { Service } from "./service.model";
 
+const isPlainString = (value: unknown): value is string => {
+  return typeof value === "string";
+};
+
+const escapeRegex = (value: string) => {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
 const getAll = async (query: {
   search?: string;
   category?: string;
@@ -27,14 +35,15 @@ const getAll = async (query: {
 
   const filter: Record<string, unknown> = {};
 
-  if (search) {
+  if (isPlainString(search) && search.trim() !== "") {
+    const safeSearch = escapeRegex(search.trim());
     filter.$or = [
-      { title: { $regex: search, $options: "i" } },
-      { description: { $regex: search, $options: "i" } },
+      { title: { $regex: safeSearch, $options: "i" } },
+      { description: { $regex: safeSearch, $options: "i" } },
     ];
   }
 
-  if (category && category !== "All") {
+  if (isPlainString(category) && category.trim() !== "" && category !== "All") {
     filter.category = category;
   }
 
