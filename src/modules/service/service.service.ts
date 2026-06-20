@@ -94,6 +94,15 @@ const purchase = async (userId: string, serviceId: string, amount: number) => {
     throw new AppError(StatusCodes.NOT_FOUND, "Service not found");
   }
 
+  const priceMatch = service.price.match(/(\d+(?:\.\d{1,2})?)/);
+  const servicePrice = priceMatch ? parseFloat(priceMatch[1]) : null;
+  if (servicePrice !== null && Math.abs(servicePrice - amount) > 0.001) {
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      `Amount does not match service price. Expected $${servicePrice.toFixed(2)}.`,
+    );
+  }
+
   const session = await mongoose.startSession();
 
   try {
