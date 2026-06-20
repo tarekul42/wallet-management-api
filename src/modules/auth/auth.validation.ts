@@ -47,8 +47,8 @@ const registerUserValidationSchema = z
       .enum(Object.values(IsActive) as [string, ...string[]])
       .optional(),
     confirmPassword: z.string().optional(),
-    commissionRate: z.undefined(),
-    approvalStatus: z.undefined(),
+    commissionRate: z.undefined().optional(),
+    approvalStatus: z.undefined().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Password and confirm password must match",
