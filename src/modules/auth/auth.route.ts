@@ -1,10 +1,7 @@
 import { Router } from "express";
-import passport from "passport";
 import checkAuth from "../../middlewares/checkAuth";
 import { Role } from "../user/user.interface";
 import { AuthControllers } from "./auth.controller";
-import { GoogleControllers } from "./google.controller";
-import { FacebookControllers } from "./facebook.controller";
 import { AuthValidations } from "./auth.validation";
 import { validateRequest } from "../../middlewares/validateRequest";
 import { authLimiter } from "../../config/rateLimiter";
@@ -60,21 +57,5 @@ router.post(
 );
 
 router.get("/demo-users", AuthControllers.getDemoUsers);
-
-router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
-
-router.get(
-  "/google/callback",
-  passport.authenticate("google", { session: false, failureRedirect: "/login" }),
-  GoogleControllers.googleCallback,
-);
-
-router.get("/facebook", passport.authenticate("facebook", { scope: ["email"] }));
-
-router.get(
-  "/facebook/callback",
-  passport.authenticate("facebook", { session: false, failureRedirect: "/login" }),
-  FacebookControllers.facebookCallback,
-);
 
 export const AuthRoutes = router;

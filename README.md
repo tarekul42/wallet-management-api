@@ -13,7 +13,7 @@ A robust, production-ready REST API for managing digital wallets, user authentic
 
 | Feature | Description |
 |---------|-------------|
-| **Authentication** | JWT-based auth with access/refresh tokens, Google OAuth, email verification, password reset, refresh token rotation |
+| **Authentication** | JWT-based auth with access/refresh tokens, email verification, password reset, refresh token rotation |
 | **Authorization** | Role-based access control (USER, AGENT, ADMIN, SUPER_ADMIN) |
 | **Wallet Management** | Create wallets, balance tracking, block/unblock operations, agent cash-in/cash-out |
 | **Transactions** | Send money, cash-in, cash-out, withdrawals, transaction history, agent commission tracking with MongoDB transactions |
@@ -36,7 +36,7 @@ A robust, production-ready REST API for managing digital wallets, user authentic
 | Framework | Express |
 | Language | TypeScript |
 | Database | MongoDB (Mongoose) |
-| Authentication | JWT, Passport.js (Local & Google OAuth) |
+| Authentication | JWT, Passport.js (Local Strategy) |
 | Validation | Zod |
 | Security | Helmet, express-rate-limit, bcryptjs |
 
@@ -235,6 +235,24 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push to `main` and 
 - Production build (`bun run build`)
 
 ---
+
+---
+
+## Security Notes
+
+### Why Third-Party Login (Google / Facebook OAuth) Was Removed
+
+This application previously supported Google and Facebook OAuth for social login. These were removed to maintain the highest level of security and control over authentication in a financial application:
+
+1. **Dependency on external identity providers** — OAuth relies on third-party services whose availability, security posture, and data-handling policies are outside our control. A compromise at the provider level could affect user accounts.
+
+2. **Account recovery complexity** — For a wallet app handling real or simulated funds, having multiple auth paths (email/password + social logins) creates ambiguity in account recovery and password reset flows. Users who signed up via OAuth may not have a password, complicating support scenarios.
+
+3. **Attack surface reduction** — Removing OAuth eliminates the need for `passport-google-oauth20`, `passport-facebook`, and their associated session/callback handling. This reduces the dependency footprint, the number of HTTP endpoints exposed, and the potential for SSRF or redirect-based attacks.
+
+4. **Simpler threat model** — With only email/password + JWT-based auth, the security model is straightforward: rate-limited login, bcrypt-hashed passwords, httpOnly refresh tokens, and sessionStorage access tokens. No additional OAuth token management or state parameter handling is required.
+
+Authentication is now limited to email/password credentials with JWT access/refresh token rotation, providing a fully self-contained auth system.
 
 ## License
 

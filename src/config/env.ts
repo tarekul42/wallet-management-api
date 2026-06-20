@@ -23,12 +23,6 @@ interface EnvVariables {
   DEMO_AGENT_PASSWORD: string;
   DEMO_ADMIN_EMAIL: string;
   DEMO_ADMIN_PASSWORD: string;
-  GOOGLE_CLIENT_ID?: string;
-  GOOGLE_CLIENT_SECRET?: string;
-  GOOGLE_CALLBACK_URL?: string;
-  FACEBOOK_APP_ID?: string;
-  FACEBOOK_APP_SECRET?: string;
-  FACEBOOK_CALLBACK_URL?: string;
 }
 
 const loadEnvVariables = (): EnvVariables => {
@@ -86,12 +80,6 @@ const loadEnvVariables = (): EnvVariables => {
     DEMO_AGENT_PASSWORD: process.env.DEMO_AGENT_PASSWORD || "DemoAgent123!",
     DEMO_ADMIN_EMAIL: process.env.DEMO_ADMIN_EMAIL || "demo.admin@example.com",
     DEMO_ADMIN_PASSWORD: process.env.DEMO_ADMIN_PASSWORD || "DemoAdmin123!",
-    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
-    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
-    GOOGLE_CALLBACK_URL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:5000/api/v1/auth/google/callback",
-    FACEBOOK_APP_ID: process.env.FACEBOOK_APP_ID,
-    FACEBOOK_APP_SECRET: process.env.FACEBOOK_APP_SECRET,
-    FACEBOOK_CALLBACK_URL: process.env.FACEBOOK_CALLBACK_URL || "http://localhost:5000/api/v1/auth/facebook/callback",
   };
 };
 

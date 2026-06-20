@@ -397,7 +397,7 @@ describe("checkAuth", () => {
 
     expect(next).toHaveBeenCalledWith(expect.any(AppError));
     expect((next.mock.calls[0][0] as AppError).statusCode).toBe(httpStatus.FORBIDDEN);
-    expect((next.mock.calls[0][0] as AppError).message).toMatch(/not authorized/i);
+    expect((next.mock.calls[0][0] as AppError).message).toMatch(/not allowed/i);
   });
 
   test("passes when user has sufficient role", async () => {
