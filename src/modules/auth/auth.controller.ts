@@ -76,7 +76,10 @@ const credentialsLogin = catchAsync(
           success: true,
           statusCode: httpStatus.OK,
           message: "User Logged In Successfully",
-          data: loginData,
+          data: {
+            ...loginData,
+            redirect: "/dashboard",
+          },
         });
       },
     )(req, res, next);

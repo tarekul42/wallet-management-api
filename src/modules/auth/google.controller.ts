@@ -15,6 +15,7 @@ const googleCallback = (req: Request, res: Response) => {
   const redirectUrl = new URL(`${envVars.CLIENT_URL}/auth/callback`);
   redirectUrl.searchParams.set("token", tokens.accessToken);
   redirectUrl.searchParams.set("refreshToken", tokens.refreshToken);
+  redirectUrl.searchParams.set("redirect", "/dashboard");
 
   res.redirect(redirectUrl.toString());
 };
