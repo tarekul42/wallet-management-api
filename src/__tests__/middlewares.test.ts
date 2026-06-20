@@ -137,7 +137,7 @@ describe("globalErrorHandler", () => {
     );
   });
 
-  test("response omits errorSources for ZodError (helper does not return it)", () => {
+  test("includes errorSources array for ZodError", () => {
     const { req, res, next } = mockReqRes();
     let zodErr: unknown;
     try {
@@ -147,7 +147,8 @@ describe("globalErrorHandler", () => {
     }
     globalErrorHandler(zodErr, req, res, next);
     const body = (res.json as ReturnType<typeof mock>).mock.calls[0][0];
-    expect(body.errorSources).toBeUndefined();
+    expect(body.errorSources).toBeDefined();
+    expect(body.errorSources[0].path).toBe("name");
   });
 
   test("catches generic Error with 500 status and error message in development", () => {

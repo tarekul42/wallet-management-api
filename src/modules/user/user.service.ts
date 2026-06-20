@@ -77,8 +77,15 @@ const getAllUsers = async (query: Record<string, unknown>) => {
     filter.approvalStatus = { $eq: String(query.approvalStatus) as ApprovalStatus };
   }
 
-  const result = await User.find(filter);
-  return result;
+  const page = Math.max(1, Number(query.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
+  const skip = (page - 1) * limit;
+
+  const [result, total] = await Promise.all([
+    User.find(filter).skip(skip).limit(limit),
+    User.countDocuments(filter),
+  ]);
+  return { data: result, meta: { page, limit, total, totalPage: Math.ceil(total / limit) } };
 };
 
 const updateUserStatus = async (

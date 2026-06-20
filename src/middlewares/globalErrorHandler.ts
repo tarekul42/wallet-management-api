@@ -16,8 +16,7 @@ const globalErrorHandler = (
   res: Response,
   _next: NextFunction,
 ) => {
-  void _next;
-  logger.log(err);
+  logger.error(err);
 
   let errorSources: TErrorSources[] = [];
   let statusCode = 500;
