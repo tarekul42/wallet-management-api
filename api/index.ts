@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { Request, Response } from "express";
 import mongoose from "mongoose";
 import app from "../src/app.js";
 import { envVars } from "../src/config/env.js";
@@ -25,5 +26,5 @@ const connectDB = async () => {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   await connectDB();
-  return app(req as any, res as any);
+  return app(req as unknown as Request, res as unknown as Response);
 }
