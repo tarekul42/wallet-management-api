@@ -1,17 +1,15 @@
 {
   "version": 2,
-  "buildCommand": "bun build ./api/index.ts --outdir ./dist --target node --format esm",
-  "installCommand": "bun install",
   "builds": [
     {
-      "src": "dist/index.js",
+      "src": "api/index.ts",
       "use": "@vercel/node"
     }
   ],
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/dist/index.js"
+      "destination": "/api/index.ts"
     }
   ]
 }
