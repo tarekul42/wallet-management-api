@@ -39,6 +39,16 @@ jobs:
   test:
     name: Tests
     runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:8
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -46,6 +56,21 @@ jobs:
           bun-version: latest
       - run: bun install
       - run: bun test
+        env:
+          DB_URL: mongodb://localhost:27017/test
+          PORT: 5000
+          NODE_ENV: test
+          CORS_ORIGIN: http://localhost:3000
+          COOKIE_DOMAIN: localhost
+          JWT_ACCESS_SECRET: test-access-secret
+          JWT_ACCESS_EXPIRES: 15m
+          JWT_REFRESH_SECRET: test-refresh-secret
+          JWT_REFRESH_EXPIRES: 30d
+          BCRYPT_SALT_ROUND: 10
+          SUPER_ADMIN_EMAIL: admin@test.com
+          SUPER_ADMIN_PASSWORD: Admin123!
+          CLIENT_URL: http://localhost:3000
+          EXPRESS_SESSION_SECRET: test-session-secret
 
   build:
     name: Build
