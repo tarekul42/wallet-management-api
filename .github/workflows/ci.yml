@@ -55,7 +55,7 @@ jobs:
         with:
           bun-version: latest
       - run: bun install
-      - run: bun test
+      - run: bun run test
         env:
           DB_URL: mongodb://localhost:27017/test
           PORT: ${{ secrets.TEST_PORT }}
