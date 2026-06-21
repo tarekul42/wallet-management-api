@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ApprovalStatus, Role } from "./user.interface";
+import { ApprovalStatus, Role } from "./user.interface.js";
 
 export const createAdminZodSchema = z.object({
   name: z.string().min(2).max(50),

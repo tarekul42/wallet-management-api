@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import logger from "../../utils/logger";
+import logger from "../../utils/logger.js";
 
 export const generateToken = (): string => {
     return crypto.randomBytes(32).toString("hex");

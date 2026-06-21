@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { IsActive, Role } from "../user/user.interface";
+import { IsActive, Role } from "../user/user.interface.js";
 
 const registerUserValidationSchema = z
   .object({

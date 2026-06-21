@@ -1,14 +1,14 @@
 import { NextFunction, Request, Response } from "express";
 import mongoose from "mongoose";
 import { ZodError } from "zod";
-import { envVars } from "../config/env";
-import { TErrorSources } from "../interfaces/error.types";
-import handleDuplicateError from "../helpers/handleDuplicateError";
-import handleCastError from "../helpers/handleCastError";
-import handleZodError from "../helpers/handleZodError";
-import handleValidationError from "../helpers/handleValidationError";
-import AppError from "../errorHelpers/AppError";
-import logger from "../utils/logger";
+import { envVars } from "../config/env.js";
+import { TErrorSources } from "../interfaces/error.types.js";
+import handleDuplicateError from "../helpers/handleDuplicateError.js";
+import handleCastError from "../helpers/handleCastError.js";
+import handleZodError from "../helpers/handleZodError.js";
+import handleValidationError from "../helpers/handleValidationError.js";
+import AppError from "../errorHelpers/AppError.js";
+import logger from "../utils/logger.js";
 
 const globalErrorHandler = (
   err: unknown,

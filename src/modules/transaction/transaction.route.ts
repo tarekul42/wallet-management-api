@@ -1,14 +1,14 @@
 import express from "express";
-import { Role } from "../user/user.interface";
-import { TransactionControllers } from "./transaction.controller";
-import checkAuth from "../../middlewares/checkAuth";
+import { Role } from "../user/user.interface.js";
+import { TransactionControllers } from "./transaction.controller.js";
+import checkAuth from "../../middlewares/checkAuth.js";
 import {
   addMoneyValidationSchema,
   sendMoneyValidationSchema,
   withdrawMoneyValidationSchema,
-} from "./transaction.validation";
-import { validateRequest } from "../../middlewares/validateRequest";
-import { transactionRateLimiter } from "../../config/rateLimiter";
+} from "./transaction.validation.js";
+import { validateRequest } from "../../middlewares/validateRequest.js";
+import { transactionRateLimiter } from "../../config/rateLimiter.js";
 
 const router = express.Router();
 

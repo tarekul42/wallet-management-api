@@ -1,10 +1,10 @@
 import { Router } from "express";
-import checkAuth from "../../middlewares/checkAuth";
-import { Role } from "../user/user.interface";
-import { AuthControllers } from "./auth.controller";
-import { AuthValidations } from "./auth.validation";
-import { validateRequest } from "../../middlewares/validateRequest";
-import { authLimiter } from "../../config/rateLimiter";
+import checkAuth from "../../middlewares/checkAuth.js";
+import { Role } from "../user/user.interface.js";
+import { AuthControllers } from "./auth.controller.js";
+import { AuthValidations } from "./auth.validation.js";
+import { validateRequest } from "../../middlewares/validateRequest.js";
+import { authLimiter } from "../../config/rateLimiter.js";
 
 const router = Router();
 

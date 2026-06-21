@@ -1,18 +1,18 @@
 import mongoose, { ClientSession } from "mongoose";
 import { StatusCodes } from "http-status-codes";
-import AppError from "../../errorHelpers/AppError";
-import { User } from "../user/user.model";
-import { Wallet } from "../wallet/wallet.model";
-import { IWallet, WalletStatus } from "../wallet/wallet.interface";
-import { Transaction } from "./transaction.model";
+import AppError from "../../errorHelpers/AppError.js";
+import { User } from "../user/user.model.js";
+import { Wallet } from "../wallet/wallet.model.js";
+import { IWallet, WalletStatus } from "../wallet/wallet.interface.js";
+import { Transaction } from "./transaction.model.js";
 import {
   ITransaction,
   TransactionStatus,
   TransactionType,
-} from "./transaction.interface";
-import { Role } from "../user/user.interface";
-import { SystemConfigServices } from "../systemConfig/systemConfig.service";
-import type { ISystemConfig } from "../systemConfig/systemConfig.interface";
+} from "./transaction.interface.js";
+import { Role } from "../user/user.interface.js";
+import { SystemConfigServices } from "../systemConfig/systemConfig.service.js";
+import type { ISystemConfig } from "../systemConfig/systemConfig.interface.js";
 
 const MAX_PAGINATION_LIMIT = 100;
 

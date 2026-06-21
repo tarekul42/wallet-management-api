@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
 import { JwtPayload } from "jsonwebtoken";
 import httpStatus from "http-status-codes";
-import { UserServices } from "./user.service";
-import sendResponse from "../../utils/sendResponse";
-import catchAsync from "../../utils/catchAsync";
-import AppError from "../../errorHelpers/AppError";
-import { ApprovalStatus } from "./user.interface";
+import { UserServices } from "./user.service.js";
+import sendResponse from "../../utils/sendResponse.js";
+import catchAsync from "../../utils/catchAsync.js";
+import AppError from "../../errorHelpers/AppError.js";
+import { ApprovalStatus } from "./user.interface.js";
 
 const getMyProfile = catchAsync(async (req: Request, res: Response) => {
   const user = req.user as JwtPayload;

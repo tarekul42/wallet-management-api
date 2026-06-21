@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { Role } from "../user/user.interface";
-import checkAuth from "../../middlewares/checkAuth";
-import { validateRequest } from "../../middlewares/validateRequest";
-import { SystemConfigControllers } from "./systemConfig.controller";
-import { SystemConfigValidations } from "./systemConfig.validation";
-import { systemConfigUpdateLimiter } from "../../config/rateLimiter";
+import { Role } from "../user/user.interface.js";
+import checkAuth from "../../middlewares/checkAuth.js";
+import { validateRequest } from "../../middlewares/validateRequest.js";
+import { SystemConfigControllers } from "./systemConfig.controller.js";
+import { SystemConfigValidations } from "./systemConfig.validation.js";
+import { systemConfigUpdateLimiter } from "../../config/rateLimiter.js";
 
 const router = Router();
 

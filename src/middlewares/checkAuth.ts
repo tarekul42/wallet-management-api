@@ -1,11 +1,11 @@
 import { NextFunction, Request, Response } from "express";
-import AppError from "../errorHelpers/AppError";
-import { envVars } from "../config/env";
-import { verifyToken } from "../utils/jwt";
+import AppError from "../errorHelpers/AppError.js";
+import { envVars } from "../config/env.js";
+import { verifyToken } from "../utils/jwt.js";
 import { JwtPayload } from "jsonwebtoken";
-import { User } from "../modules/user/user.model";
-import { IsActive } from "../modules/user/user.interface";
-import catchAsync from "../utils/catchAsync";
+import { User } from "../modules/user/user.model.js";
+import { IsActive } from "../modules/user/user.interface.js";
+import catchAsync from "../utils/catchAsync.js";
 import httpStatus from "http-status-codes";
 
 const checkAuth = (...authRoles: string[]) =>

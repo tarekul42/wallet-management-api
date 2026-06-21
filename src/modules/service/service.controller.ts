@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-import asyncHandler from "../../utils/catchAsync";
-import sendResponse from "../../utils/sendResponse";
+import asyncHandler from "../../utils/catchAsync.js";
+import sendResponse from "../../utils/sendResponse.js";
 import { JwtPayload } from "jsonwebtoken";
-import { ServiceServices } from "./service.service";
+import { ServiceServices } from "./service.service.js";
 
 const getAll = asyncHandler(async (req: Request, res: Response) => {
   const query = req.query as Record<string, string>;

@@ -1,4 +1,4 @@
-import { envVars } from "../config/env";
+import { envVars } from "../config/env.js";
 
 const isDev = () => envVars.NODE_ENV === "development";
 

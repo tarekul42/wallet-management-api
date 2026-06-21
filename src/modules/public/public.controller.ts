@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import asyncHandler from "../../utils/catchAsync";
-import sendResponse from "../../utils/sendResponse";
-import { PublicServices } from "./public.service";
+import asyncHandler from "../../utils/catchAsync.js";
+import sendResponse from "../../utils/sendResponse.js";
+import { PublicServices } from "./public.service.js";
 
 const getStats = asyncHandler(async (_req: Request, res: Response) => {
   const stats = await PublicServices.getStats();

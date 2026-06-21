@@ -1,13 +1,13 @@
 import { StatusCodes } from "http-status-codes";
-import AppError from "../../errorHelpers/AppError";
-import { User } from "./user.model";
-import { ApprovalStatus, IsActive, IUser, Role } from "./user.interface";
+import AppError from "../../errorHelpers/AppError.js";
+import { User } from "./user.model.js";
+import { ApprovalStatus, IsActive, IUser, Role } from "./user.interface.js";
 import mongoose from "mongoose";
-import { Wallet } from "../wallet/wallet.model";
-import { WalletStatus } from "../wallet/wallet.interface";
-import { createUserAndWallet } from "./user.helpers";
+import { Wallet } from "../wallet/wallet.model.js";
+import { WalletStatus } from "../wallet/wallet.interface.js";
+import { createUserAndWallet } from "./user.helpers.js";
 import bcrypt from "bcryptjs";
-import { notifyAgentApproved, notifyAgentSuspended } from "../../utils/notification.utils";
+import { notifyAgentApproved, notifyAgentSuspended } from "../../utils/notification.utils.js";
 
 // Service to get a user's own profile
 const getMyProfile = async (userId: string) => {

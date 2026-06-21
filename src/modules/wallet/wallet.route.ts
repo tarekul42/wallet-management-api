@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { Role } from "../user/user.interface";
-import { WalletControllers } from "./wallet.controller";
-import checkAuth from "../../middlewares/checkAuth";
-import { walletActionLimiter } from "../../config/rateLimiter";
+import { Role } from "../user/user.interface.js";
+import { WalletControllers } from "./wallet.controller.js";
+import checkAuth from "../../middlewares/checkAuth.js";
+import { walletActionLimiter } from "../../config/rateLimiter.js";
 
 const router = Router();
 

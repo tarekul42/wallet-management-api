@@ -1,5 +1,5 @@
 import { StatusCodes } from "http-status-codes";
-import { TGenericErrorResponse } from "../interfaces/error.types";
+import { TGenericErrorResponse } from "../interfaces/error.types.js";
 
 const handleDuplicateError = (err: unknown): TGenericErrorResponse => {
   if (err instanceof Error && typeof err.message === "string") {

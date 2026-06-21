@@ -1,5 +1,5 @@
-import { Transaction } from "../transaction/transaction.model";
-import { TransactionStatus, TransactionType } from "../transaction/transaction.interface";
+import { Transaction } from "../transaction/transaction.model.js";
+import { TransactionStatus, TransactionType } from "../transaction/transaction.interface.js";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 

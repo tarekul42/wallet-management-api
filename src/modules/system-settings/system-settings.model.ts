@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose";
-import { ISystemSettings } from "./system-settings.interface";
+import { ISystemSettings } from "./system-settings.interface.js";
 
 const systemSettingsSchema = new Schema<ISystemSettings>(
     {

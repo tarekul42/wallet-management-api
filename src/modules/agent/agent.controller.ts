@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 import { JwtPayload } from "jsonwebtoken";
 import httpStatus from "http-status-codes";
-import sendResponse from "../../utils/sendResponse";
-import catchAsync from "../../utils/catchAsync";
-import { AgentServices } from "./agent.service";
+import sendResponse from "../../utils/sendResponse.js";
+import catchAsync from "../../utils/catchAsync.js";
+import { AgentServices } from "./agent.service.js";
 
 const getSummary = catchAsync(async (req: Request, res: Response) => {
   const user = req.user as JwtPayload;

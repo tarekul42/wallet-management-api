@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import httpStatus from "http-status-codes";
-import sendResponse from "../../utils/sendResponse";
-import catchAsync from "../../utils/catchAsync";
-import { AdminServices } from "./admin.service";
+import sendResponse from "../../utils/sendResponse.js";
+import catchAsync from "../../utils/catchAsync.js";
+import { AdminServices } from "./admin.service.js";
 
 const getSummary = catchAsync(async (_req: Request, res: Response) => {
   const result = await AdminServices.getSummary();

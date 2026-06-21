@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { JwtPayload } from "jsonwebtoken";
-import asyncHandler from "../../utils/catchAsync";
-import sendResponse from "../../utils/sendResponse";
-import { DashboardServices } from "./dashboard.service";
+import asyncHandler from "../../utils/catchAsync.js";
+import sendResponse from "../../utils/sendResponse.js";
+import { DashboardServices } from "./dashboard.service.js";
 
 const getSpendingOverview = asyncHandler(async (req: Request, res: Response) => {
   const user = req.user as JwtPayload;
