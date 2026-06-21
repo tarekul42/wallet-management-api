@@ -1,6 +1,5 @@
 import mongoose, { ClientSession } from "mongoose";
 import { StatusCodes } from "http-status-codes";
-import { v4 as uuidv4 } from "uuid";
 import AppError from "../../errorHelpers/AppError";
 import { User } from "../user/user.model";
 import { Wallet } from "../wallet/wallet.model";
@@ -113,7 +112,7 @@ const _handleAgentCommission = async (
           amount: commission,
           type: TransactionType.COMMISSION,
           status: TransactionStatus.SUCCESSFUL,
-          referenceId: uuidv4(),
+          referenceId: crypto.randomUUID(),
           description: `Commission for ${transactionType} of ${transactionAmount}`,
           receiver: agent._id,
         },
@@ -231,7 +230,7 @@ const sendMoney = async (
           fee,
           type: TransactionType.SEND_MONEY,
           status: TransactionStatus.SUCCESSFUL,
-          referenceId: uuidv4(),
+          referenceId: crypto.randomUUID(),
           description,
         },
       ],
@@ -360,7 +359,7 @@ const addMoney = async (
           fee,
           type: TransactionType.CASH_IN,
           status: TransactionStatus.SUCCESSFUL,
-          referenceId: uuidv4(),
+          referenceId: crypto.randomUUID(),
           description: "Cash in",
         },
       ],
@@ -522,7 +521,7 @@ const withdrawMoney = async (
           fee,
           type: transactionType,
           status: TransactionStatus.SUCCESSFUL,
-          referenceId: uuidv4(),
+          referenceId: crypto.randomUUID(),
           description: `Withdrawal by ${actor.role}`,
         },
       ],

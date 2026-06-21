@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 import { StatusCodes } from "http-status-codes";
-import { v4 as uuidv4 } from "uuid";
 import AppError from "../../errorHelpers/AppError";
 import { User } from "../user/user.model";
 import { Wallet } from "../wallet/wallet.model";
@@ -174,7 +173,7 @@ const purchase = async (userId: string, serviceId: string, amount: number) => {
           fee,
           type: TransactionType.SERVICE_PURCHASE,
           status: TransactionStatus.SUCCESSFUL,
-          referenceId: uuidv4(),
+          referenceId: crypto.randomUUID(),
           description: `Payment for ${service.title}`,
           service: new mongoose.Types.ObjectId(serviceId),
         },
