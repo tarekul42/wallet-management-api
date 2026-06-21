@@ -1,5 +1,5 @@
 import { model, Schema } from "mongoose";
-import { ISystemConfig } from "./systemConfig.interface";
+import { ISystemConfig } from "./systemConfig.interface.js";
 
 /**
  * SystemConfig Schema

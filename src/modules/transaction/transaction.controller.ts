@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import httpStatus, { StatusCodes } from "http-status-codes";
-import catchAsync from "../../utils/catchAsync";
-import sendResponse from "../../utils/sendResponse";
-import { TransactionServices } from "./transaction.service";
+import catchAsync from "../../utils/catchAsync.js";
+import sendResponse from "../../utils/sendResponse.js";
+import { TransactionServices } from "./transaction.service.js";
 import { JwtPayload } from "jsonwebtoken";
 
 const sendMoney = catchAsync(async (req: Request, res: Response) => {

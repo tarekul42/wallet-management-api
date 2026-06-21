@@ -1,14 +1,14 @@
 import { NextFunction, Request, Response } from "express";
 import httpStatus from "http-status-codes";
 import passport from "passport";
-import AppError from "../../errorHelpers/AppError";
-import sendResponse from "../../utils/sendResponse";
-import catchAsync from "../../utils/catchAsync";
-import setAuthCookie from "../../utils/setCookie";
-import { IUser } from "../user/user.interface";
-import { AuthServices } from "./auth.service";
+import AppError from "../../errorHelpers/AppError.js";
+import sendResponse from "../../utils/sendResponse.js";
+import catchAsync from "../../utils/catchAsync.js";
+import setAuthCookie from "../../utils/setCookie.js";
+import { IUser } from "../user/user.interface.js";
+import { AuthServices } from "./auth.service.js";
 import { Document } from "mongoose";
-import { envVars } from "../../config/env";
+import { envVars } from "../../config/env.js";
 
 const getNewAccessToken = catchAsync(
   async (req: Request, res: Response) => {

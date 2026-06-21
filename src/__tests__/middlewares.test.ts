@@ -44,11 +44,11 @@ mock.module("../modules/user/user.model", () => ({
   User: { findById: mockUserFindById },
 }));
 
-import globalErrorHandler from "../middlewares/globalErrorHandler";
-import notFound from "../middlewares/notFound";
-import { validateRequest } from "../middlewares/validateRequest";
-import checkAuth from "../middlewares/checkAuth";
-import AppError from "../errorHelpers/AppError";
+import globalErrorHandler from "../middlewares/globalErrorHandler.js";
+import notFound from "../middlewares/notFound.js";
+import { validateRequest } from "../middlewares/validateRequest.js";
+import checkAuth from "../middlewares/checkAuth.js";
+import AppError from "../errorHelpers/AppError.js";
 
 function flush() {
   return new Promise((resolve) => setTimeout(resolve, 0));

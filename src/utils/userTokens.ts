@@ -1,9 +1,9 @@
 import { JwtPayload } from "jsonwebtoken";
-import { envVars } from "../config/env";
-import { IsActive, IUser } from "../modules/user/user.interface";
-import { generateToken, verifyToken } from "./jwt";
-import { User } from "../modules/user/user.model";
-import AppError from "../errorHelpers/AppError";
+import { envVars } from "../config/env.js";
+import { IsActive, IUser } from "../modules/user/user.interface.js";
+import { generateToken, verifyToken } from "./jwt.js";
+import { User } from "../modules/user/user.model.js";
+import AppError from "../errorHelpers/AppError.js";
 import httpStatus from "http-status-codes";
 
 const createUserTokens = (user: Partial<IUser>) => {

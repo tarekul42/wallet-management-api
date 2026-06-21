@@ -4,7 +4,7 @@ import {
   TransactionModel,
   TransactionStatus,
   TransactionType,
-} from "./transaction.interface";
+} from "./transaction.interface.js";
 
 const transactionSchema = new Schema<ITransaction, TransactionModel>(
   {

@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
-import { IUser } from "./user.interface";
-import { User } from "./user.model";
-import { Wallet } from "../wallet/wallet.model";
-import AppError from "../../errorHelpers/AppError";
+import { IUser } from "./user.interface.js";
+import { User } from "./user.model.js";
+import { Wallet } from "../wallet/wallet.model.js";
+import AppError from "../../errorHelpers/AppError.js";
 import { StatusCodes } from "http-status-codes";
 
 export const createUserAndWallet = async (

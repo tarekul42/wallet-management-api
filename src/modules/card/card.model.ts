@@ -1,5 +1,5 @@
 import { model, Schema } from "mongoose";
-import { ICard, CardModel, CardType, CardStatus } from "./card.interface";
+import { ICard, CardModel, CardType, CardStatus } from "./card.interface.js";
 
 const cardSchema = new Schema<ICard, CardModel>(
   {

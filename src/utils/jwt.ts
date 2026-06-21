@@ -1,6 +1,6 @@
 import jwt, { JwtPayload, SignOptions } from "jsonwebtoken";
-import { User } from "../modules/user/user.model";
-import AppError from "../errorHelpers/AppError";
+import { User } from "../modules/user/user.model.js";
+import AppError from "../errorHelpers/AppError.js";
 import httpStatus from "http-status-codes";
 
 const generateToken = (

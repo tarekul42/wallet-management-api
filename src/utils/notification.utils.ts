@@ -11,7 +11,7 @@ interface NotificationData {
     [key: string]: string | number;
 }
 
-import logger from "./logger";
+import logger from "./logger.js";
 
 const logNotification = (type: string, to: string, message: string) => {
     logger.log("\n🔔 ================ NOTIFICATION ================");

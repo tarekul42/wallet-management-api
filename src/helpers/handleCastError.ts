@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { TGenericErrorResponse } from "../interfaces/error.types";
+import { TGenericErrorResponse } from "../interfaces/error.types.js";
 import { StatusCodes } from "http-status-codes";
 
 const handleCastError = (

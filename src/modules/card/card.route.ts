@@ -1,8 +1,8 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
-import { CardControllers } from "./card.controller";
-import checkAuth from "../../middlewares/checkAuth";
-import { Role } from "../user/user.interface";
+import { CardControllers } from "./card.controller.js";
+import checkAuth from "../../middlewares/checkAuth.js";
+import { Role } from "../user/user.interface.js";
 
 const router = Router();
 

@@ -1,8 +1,8 @@
 import { Types } from "mongoose";
 import { StatusCodes } from "http-status-codes";
-import AppError from "../../errorHelpers/AppError";
-import { ISystemSettings } from "./system-settings.interface";
-import { SystemSettings } from "./system-settings.model";
+import AppError from "../../errorHelpers/AppError.js";
+import { ISystemSettings } from "./system-settings.interface.js";
+import { SystemSettings } from "./system-settings.model.js";
 
 const getSystemSettings = async () => {
     let settings = await SystemSettings.findOne();

@@ -2,7 +2,7 @@ import { ZodError, ZodIssue } from "zod";
 import {
   TErrorSources,
   TGenericErrorResponse,
-} from "../interfaces/error.types";
+} from "../interfaces/error.types.js";
 import { StatusCodes } from "http-status-codes";
 
 const handleZodError = (err: ZodError): TGenericErrorResponse => {

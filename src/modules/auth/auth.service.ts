@@ -1,14 +1,14 @@
 import { StatusCodes } from "http-status-codes";
 import mongoose, { Document } from "mongoose";
-import AppError from "../../errorHelpers/AppError";
-import { ApprovalStatus, IUser } from "../user/user.interface";
-import { User } from "../user/user.model";
-import { createUserAndWallet } from "../user/user.helpers";
-import { createNewAccessToken, createUserTokens } from "../../utils/userTokens";
-import { envVars } from "../../config/env";
-import { verifyToken } from "../../utils/jwt";
-import { generateToken, sendMockEmail } from "./auth.utils";
-import { notifyRegistration } from "../../utils/notification.utils";
+import AppError from "../../errorHelpers/AppError.js";
+import { ApprovalStatus, IUser } from "../user/user.interface.js";
+import { User } from "../user/user.model.js";
+import { createUserAndWallet } from "../user/user.helpers.js";
+import { createNewAccessToken, createUserTokens } from "../../utils/userTokens.js";
+import { envVars } from "../../config/env.js";
+import { verifyToken } from "../../utils/jwt.js";
+import { generateToken, sendMockEmail } from "./auth.utils.js";
+import { notifyRegistration } from "../../utils/notification.utils.js";
 
 const getNewAccessToken = async (refreshToken: string) => {
   const newAccessToken = await createNewAccessToken(refreshToken);

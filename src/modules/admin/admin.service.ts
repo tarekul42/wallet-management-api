@@ -1,7 +1,7 @@
-import { User } from "../user/user.model";
-import { Transaction } from "../transaction/transaction.model";
-import { TransactionStatus } from "../transaction/transaction.interface";
-import { Role } from "../user/user.interface";
+import { User } from "../user/user.model.js";
+import { Transaction } from "../transaction/transaction.model.js";
+import { TransactionStatus } from "../transaction/transaction.interface.js";
+import { Role } from "../user/user.interface.js";
 
 const getSummary = async () => {
   const totalUsers = await User.countDocuments({ role: Role.USER });

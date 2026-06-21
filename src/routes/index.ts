@@ -1,15 +1,15 @@
 import express from "express";
-import { AuthRoutes } from "../modules/auth/auth.route";
-import { UserRoutes } from "../modules/user/user.route";
-import { WalletRoutes } from "../modules/wallet/wallet.route";
-import { TransactionRoutes } from "../modules/transaction/transaction.route";
-import { SystemConfigRoutes } from "../modules/systemConfig/systemConfig.route";
-import { AgentRoutes } from "../modules/agent/agent.route";
-import { AdminRoutes } from "../modules/admin/admin.route";
-import { ServiceRoutes } from "../modules/service/service.route";
-import { CardRoutes } from "../modules/card/card.route";
-import { DashboardRoutes } from "../modules/dashboard/dashboard.route";
-import { PublicRoutes } from "../modules/public/public.route";
+import { AuthRoutes } from "../modules/auth/auth.route.js";
+import { UserRoutes } from "../modules/user/user.route.js";
+import { WalletRoutes } from "../modules/wallet/wallet.route.js";
+import { TransactionRoutes } from "../modules/transaction/transaction.route.js";
+import { SystemConfigRoutes } from "../modules/systemConfig/systemConfig.route.js";
+import { AgentRoutes } from "../modules/agent/agent.route.js";
+import { AdminRoutes } from "../modules/admin/admin.route.js";
+import { ServiceRoutes } from "../modules/service/service.route.js";
+import { CardRoutes } from "../modules/card/card.route.js";
+import { DashboardRoutes } from "../modules/dashboard/dashboard.route.js";
+import { PublicRoutes } from "../modules/public/public.route.js";
 
 const router = express.Router();
 

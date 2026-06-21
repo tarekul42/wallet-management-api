@@ -1,7 +1,7 @@
 import rateLimit from "express-rate-limit";
 import { Request, Response } from "express";
 import httpStatus from "http-status-codes";
-import sendResponse from "../utils/sendResponse";
+import sendResponse from "../utils/sendResponse.js";
 
 const envMax = (key: string, fallback: number): number => {
   const val = process.env[key];

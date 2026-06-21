@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { model, Schema } from "mongoose";
-import { ApprovalStatus, IsActive, IUser, Role } from "./user.interface";
-import { envVars } from "../../config/env";
+import { ApprovalStatus, IsActive, IUser, Role } from "./user.interface.js";
+import { envVars } from "../../config/env.js";
 
 const userSchema = new Schema<IUser>(
   {

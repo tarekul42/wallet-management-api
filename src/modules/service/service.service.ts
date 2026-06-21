@@ -1,18 +1,18 @@
 import mongoose from "mongoose";
 import { StatusCodes } from "http-status-codes";
-import AppError from "../../errorHelpers/AppError";
-import { User } from "../user/user.model";
-import { Wallet } from "../wallet/wallet.model";
-import { IWallet, WalletStatus } from "../wallet/wallet.interface";
-import { Transaction } from "../transaction/transaction.model";
+import AppError from "../../errorHelpers/AppError.js";
+import { User } from "../user/user.model.js";
+import { Wallet } from "../wallet/wallet.model.js";
+import { IWallet, WalletStatus } from "../wallet/wallet.interface.js";
+import { Transaction } from "../transaction/transaction.model.js";
 import {
   TransactionStatus,
   TransactionType,
-} from "../transaction/transaction.interface";
-import { Role } from "../user/user.interface";
-import { SystemConfigServices } from "../systemConfig/systemConfig.service";
-import { SystemSettings } from "../system-settings/system-settings.model";
-import { Service } from "./service.model";
+} from "../transaction/transaction.interface.js";
+import { Role } from "../user/user.interface.js";
+import { SystemConfigServices } from "../systemConfig/systemConfig.service.js";
+import { SystemSettings } from "../system-settings/system-settings.model.js";
+import { Service } from "./service.model.js";
 
 const isPlainString = (value: unknown): value is string => {
   return typeof value === "string";

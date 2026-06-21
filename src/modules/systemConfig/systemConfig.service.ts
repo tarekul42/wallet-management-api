@@ -1,6 +1,6 @@
 
-import { ISystemConfig } from "./systemConfig.interface";
-import { SystemConfig } from "./systemConfig.model";
+import { ISystemConfig } from "./systemConfig.interface.js";
+import { SystemConfig } from "./systemConfig.model.js";
 
 /**
  * Get the current system configuration

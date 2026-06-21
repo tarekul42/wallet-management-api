@@ -1,16 +1,16 @@
 import { Router } from "express";
-import { UserControllers } from "./user.controller";
-import { Role } from "./user.interface";
-import checkAuth from "../../middlewares/checkAuth";
+import { UserControllers } from "./user.controller.js";
+import { Role } from "./user.interface.js";
+import checkAuth from "../../middlewares/checkAuth.js";
 import {
   agentApprovalZodSchema,
   createAdminZodSchema,
   suspendAgentZodSchema,
   updatePasswordZodSchema,
   updateUserZodSchema,
-} from "./user.validation";
-import { validateRequest } from "../../middlewares/validateRequest";
-import { adminActionLimiter, selfActionLimiter } from "../../config/rateLimiter";
+} from "./user.validation.js";
+import { validateRequest } from "../../middlewares/validateRequest.js";
+import { adminActionLimiter, selfActionLimiter } from "../../config/rateLimiter.js";
 
 const router = Router();
 

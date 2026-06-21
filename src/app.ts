@@ -3,13 +3,13 @@ import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import session from "express-session";
-import { generalApiRateLimiter } from "./config/rateLimiter";
-import router from "./routes";
-import notFound from "./middlewares/notFound";
-import globalErrorHandler from "./middlewares/globalErrorHandler";
+import { generalApiRateLimiter } from "./config/rateLimiter.js";
+import router from "./routes/index.js";
+import notFound from "./middlewares/notFound.js";
+import globalErrorHandler from "./middlewares/globalErrorHandler.js";
 import passport from "passport";
-import { envVars } from "./config/env";
-import "./config/passport";
+import { envVars } from "./config/env.js";
+import "./config/passport.js";
 
 const app = express();
 

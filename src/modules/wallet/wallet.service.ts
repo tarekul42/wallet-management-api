@@ -1,10 +1,10 @@
 import { StatusCodes } from "http-status-codes";
 import mongoose from "mongoose";
-import AppError from "../../errorHelpers/AppError";
-import { User } from "../user/user.model";
-import { Wallet } from "./wallet.model";
-import { IWallet, WalletStatus } from "./wallet.interface";
-import { notifyWalletBlocked, notifyWalletUnblocked } from "../../utils/notification.utils";
+import AppError from "../../errorHelpers/AppError.js";
+import { User } from "../user/user.model.js";
+import { Wallet } from "./wallet.model.js";
+import { IWallet, WalletStatus } from "./wallet.interface.js";
+import { notifyWalletBlocked, notifyWalletUnblocked } from "../../utils/notification.utils.js";
 
 const getMyWallet = async (userId: string) => {
   const user = await User.findById(userId).populate<{ wallet: IWallet }>("wallet");

@@ -1,11 +1,11 @@
 import httpStatus from "http-status-codes";
 import mongoose from "mongoose";
-import AppError from "../../errorHelpers/AppError";
-import { User } from "../user/user.model";
-import { IWallet } from "../wallet/wallet.interface";
-import { Transaction } from "../transaction/transaction.model";
-import { TransactionStatus, TransactionType } from "../transaction/transaction.interface";
-import { Role } from "../user/user.interface";
+import AppError from "../../errorHelpers/AppError.js";
+import { User } from "../user/user.model.js";
+import { IWallet } from "../wallet/wallet.interface.js";
+import { Transaction } from "../transaction/transaction.model.js";
+import { TransactionStatus, TransactionType } from "../transaction/transaction.interface.js";
+import { Role } from "../user/user.interface.js";
 
 const getSummary = async (userId: string) => {
   const user = await User.findById(userId).populate<{ wallet: IWallet }>("wallet");

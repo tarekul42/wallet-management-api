@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import httpStatus from "http-status-codes";
-import catchAsync from "../../utils/catchAsync";
-import sendResponse from "../../utils/sendResponse";
-import { SystemConfigServices } from "./systemConfig.service";
+import catchAsync from "../../utils/catchAsync.js";
+import sendResponse from "../../utils/sendResponse.js";
+import { SystemConfigServices } from "./systemConfig.service.js";
 
 /**
  * Get current system configuration

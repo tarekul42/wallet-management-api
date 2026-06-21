@@ -1,5 +1,5 @@
 import { model, Schema } from "mongoose";
-import { IService, ServiceModel } from "./service.interface";
+import { IService, ServiceModel } from "./service.interface.js";
 
 const reviewSchema = new Schema(
   {

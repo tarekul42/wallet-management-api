@@ -1,7 +1,7 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { User } from "../modules/user/user.model";
-import { IsActive } from "../modules/user/user.interface";
+import { User } from "../modules/user/user.model.js";
+import { IsActive } from "../modules/user/user.interface.js";
 import bcrypt from "bcryptjs";
 import { Types } from "mongoose";
 

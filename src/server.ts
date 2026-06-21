@@ -1,8 +1,8 @@
 import { Server } from "http";
 import mongoose from "mongoose";
-import app from "./app";
-import { envVars } from "./config/env";
-import logger from "./utils/logger";
+import app from "./app.js";
+import { envVars } from "./config/env.js";
+import logger from "./utils/logger.js";
 
 let server: Server;
 
