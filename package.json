@@ -5,7 +5,8 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "bun --watch src/server.ts",
-    "build": "bun build ./src/server.ts --outdir ./dist --target node",
+    "build": "bun build ./src/api.ts --outdir ./dist --target node",
+    "build:server": "bun build ./src/server.ts --outdir ./dist --target node",
     "start": "bun dist/server.js",
     "test": "bun test --isolate --preload ./src/__tests__/setup.ts",
     "seed": "bun scripts/seed.ts",
