@@ -36,13 +36,14 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
     success: true,
     statusCode: httpStatus.OK,
     message: "Users retrieved successfully",
-    data: result,
+    data: result.data,
+    meta: result.meta,
   });
 });
 
 const blockUser = catchAsync(async (req: Request, res: Response) => {
   const currentUser = req.user as JwtPayload;
-  const targetUserId = req.params.id;
+  const targetUserId = req.params.id as string;
   const result = await UserServices.blockUser(currentUser.userId, targetUserId);
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -53,7 +54,7 @@ const blockUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 const unblockUser = catchAsync(async (req: Request, res: Response) => {
-  const targetUserId = req.params.id;
+  const targetUserId = req.params.id as string;
   const result = await UserServices.unblockUser(targetUserId);
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -64,7 +65,7 @@ const unblockUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 const agentApprovalByAdmin = catchAsync(async (req: Request, res: Response) => {
-  const userId = req.params.id;
+  const userId = req.params.id as string;
   const { approvalStatus, commissionRate } = req.body;
   const result = await UserServices.agentApprovalByAdmin(userId, {
     approvalStatus,
@@ -84,7 +85,7 @@ interface SuspendAgentBody {
 }
 
 const suspendAgent = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const { status } = req.body as SuspendAgentBody;
 
   // Validate input

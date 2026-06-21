@@ -66,9 +66,13 @@ const checkAuth = (...authRoles: string[]) =>
     }
 
     if (authRoles.length > 0 && !authRoles.includes(user.role)) {
+      const roleLabel = user.role === "SUPER_ADMIN" ? "Super Admins" : user.role === "ADMIN" ? "Admins" : user.role === "AGENT" ? "Agents" : user.role;
+      const requiredLabel = authRoles.length === 1
+        ? authRoles[0] === "USER" ? "users" : authRoles[0].toLowerCase().replace(/_/g, " ")
+        : `${authRoles.map(r => r.toLowerCase().replace(/_/g, " ")).join(", ")}`;
       throw new AppError(
         httpStatus.FORBIDDEN,
-        "You are not authorized to access this route.",
+        `${roleLabel} are not allowed to perform this action. Only ${requiredLabel} can.`,
       );
     }
 

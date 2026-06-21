@@ -6,6 +6,7 @@ export enum TransactionType {
   CASH_IN = "CASH_IN",
   CASH_OUT = "CASH_OUT",
   COMMISSION = "COMMISSION",
+  SERVICE_PURCHASE = "SERVICE_PURCHASE",
 }
 
 export enum TransactionStatus {
@@ -75,6 +76,11 @@ export interface ITransaction {
   status: TransactionStatus;
   referenceId: string;
   description?: string;
+  /**
+   * Reference to the purchased service (only for SERVICE_PURCHASE transactions).
+   */
+  service?: Types.ObjectId;
+
   /**
    * Timestamp when the transaction was created. Set by Mongoose when `timestamps: true`.
    * Optional here because it's not present on plain creation payloads but present on hydrated documents.

@@ -3,6 +3,21 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { User } from "../modules/user/user.model";
 import { IsActive } from "../modules/user/user.interface";
 import bcrypt from "bcryptjs";
+import { Types } from "mongoose";
+
+passport.serializeUser((user: unknown, done) => {
+  const u = user as { _id: Types.ObjectId };
+  done(null, u._id.toString());
+});
+
+passport.deserializeUser(async (id: string, done) => {
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (error) {
+    done(error, null);
+  }
+});
 
 passport.use(
   new LocalStrategy(

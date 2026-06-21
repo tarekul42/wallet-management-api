@@ -34,6 +34,10 @@ const transactionSchema = new Schema<ITransaction, TransactionModel>(
     commission: {
       type: Number,
     },
+    service: {
+      type: Schema.Types.ObjectId,
+      ref: "Service",
+    },
     type: {
       type: String,
       enum: Object.values(TransactionType),

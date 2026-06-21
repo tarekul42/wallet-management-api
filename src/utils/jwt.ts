@@ -3,13 +3,6 @@ import { User } from "../modules/user/user.model";
 import AppError from "../errorHelpers/AppError";
 import httpStatus from "http-status-codes";
 
-class TokenError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "TokenError";
-  }
-}
-
 const generateToken = (
   payload: JwtPayload,
   secret: string,
@@ -43,8 +36,11 @@ const verifyToken = async (token: string, secret: string) => {
 
     return decodedToken;
   } catch (error) {
-    throw new TokenError(`Invalid token: ${(error as Error).message}`);
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw new AppError(httpStatus.UNAUTHORIZED, `Invalid token: ${(error as Error).message}`);
   }
 };
 
-export { generateToken, verifyToken, TokenError };
+export { generateToken, verifyToken };

@@ -40,14 +40,15 @@ const registerUserValidationSchema = z
     nid: z
       .string()
       .length(10, { message: "NID must be exactly 10 digits" })
-      .regex(/^\d+$/, { message: "NID must contain only digits" }),
+      .regex(/^\d+$/, { message: "NID must contain only digits" })
+      .optional(),
     role: z.enum(Object.values(Role) as [string, ...string[]]).optional(),
     isActive: z
       .enum(Object.values(IsActive) as [string, ...string[]])
       .optional(),
     confirmPassword: z.string().optional(),
-    commissionRate: z.undefined(),
-    approvalStatus: z.undefined(),
+    commissionRate: z.undefined().optional(),
+    approvalStatus: z.undefined().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Password and confirm password must match",
@@ -69,24 +70,18 @@ const loginUserValidationSchema = z.object({
 });
 
 const verifyEmailValidationSchema = z.object({
-  body: z.object({
-    token: z.string().min(1, "Verification token is required"),
-  }),
+  token: z.string().min(1, "Verification token is required"),
 });
 
 const forgotPasswordValidationSchema = z.object({
-  body: z.object({
-    email: z.string().min(1, "Email is required").email("Invalid email address"),
-  }),
+  email: z.string().min(1, "Email is required").email("Invalid email address"),
 });
 
 const resetPasswordValidationSchema = z.object({
-  body: z.object({
-    token: z.string().min(1, "Token is required"),
-    newPassword: z
-      .string()
-      .min(6, "Password must be at least 6 characters long"),
-  }),
+  token: z.string().min(1, "Token is required"),
+  newPassword: z
+    .string()
+    .min(6, "Password must be at least 6 characters long"),
 });
 
 export const AuthValidations = {

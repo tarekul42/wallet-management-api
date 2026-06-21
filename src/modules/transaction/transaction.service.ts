@@ -1,6 +1,5 @@
 import mongoose, { ClientSession } from "mongoose";
 import { StatusCodes } from "http-status-codes";
-import { v4 as uuidv4 } from "uuid";
 import AppError from "../../errorHelpers/AppError";
 import { User } from "../user/user.model";
 import { Wallet } from "../wallet/wallet.model";
@@ -13,6 +12,7 @@ import {
 } from "./transaction.interface";
 import { Role } from "../user/user.interface";
 import { SystemConfigServices } from "../systemConfig/systemConfig.service";
+import type { ISystemConfig } from "../systemConfig/systemConfig.interface";
 
 const MAX_PAGINATION_LIMIT = 100;
 
@@ -23,10 +23,9 @@ const MAX_PAGINATION_LIMIT = 100;
 const checkAndUpdateTransactionLimits = async (
   userId: string,
   amount: number,
+  config: ISystemConfig,
   session?: ClientSession,
 ) => {
-  const config = await SystemConfigServices.getSystemConfig();
-
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
@@ -40,13 +39,22 @@ const checkAndUpdateTransactionLimits = async (
     type: { $in: [TransactionType.SEND_MONEY, TransactionType.CASH_OUT, TransactionType.WITHDRAW] },
   };
 
-  // Calculate daily total
-  const dailyTransactions = await Transaction.find({
-    ...filterBase,
-    createdAt: { $gte: startOfDay },
-  }).session(session || null);
-
-  const dailyTotal = dailyTransactions.reduce((sum, t) => sum + t.amount, 0);
+  const [result] = await Transaction.aggregate([
+    { $match: { ...filterBase, createdAt: { $gte: startOfMonth } } },
+    {
+      $group: {
+        _id: null,
+        daily: {
+          $sum: {
+            $cond: [{ $gte: ["$createdAt", startOfDay] }, "$amount", 0],
+          },
+        },
+        monthly: { $sum: "$amount" },
+      },
+    },
+  ]).session(session || null);
+  const dailyTotal = result?.daily ?? 0;
+  const monthlyTotal = result?.monthly ?? 0;
 
   if (dailyTotal + amount > config.dailyLimit) {
     throw new AppError(
@@ -54,14 +62,6 @@ const checkAndUpdateTransactionLimits = async (
       `Daily transaction limit exceeded. Remaining: ${config.dailyLimit - dailyTotal}`,
     );
   }
-
-  // Calculate monthly total
-  const monthlyTransactions = await Transaction.find({
-    ...filterBase,
-    createdAt: { $gte: startOfMonth },
-  }).session(session || null);
-
-  const monthlyTotal = monthlyTransactions.reduce((sum, t) => sum + t.amount, 0);
 
   if (monthlyTotal + amount > config.monthlyLimit) {
     throw new AppError(
@@ -112,7 +112,7 @@ const _handleAgentCommission = async (
           amount: commission,
           type: TransactionType.COMMISSION,
           status: TransactionStatus.SUCCESSFUL,
-          referenceId: uuidv4(),
+          referenceId: crypto.randomUUID(),
           description: `Commission for ${transactionType} of ${transactionAmount}`,
           receiver: agent._id,
         },
@@ -182,10 +182,10 @@ const sendMoney = async (
     }
 
     // Check transaction limits
-    await checkAndUpdateTransactionLimits(senderId, amount, session);
+    const config = await SystemConfigServices.getSystemConfig();
+    await checkAndUpdateTransactionLimits(senderId, amount, config, session);
 
     // Get dynamic fee from SystemConfig
-    const config = await SystemConfigServices.getSystemConfig();
     const fee = amount > 100 ? config.sendMoneyFee : 0;
     const totalDeduction = amount + fee;
 
@@ -230,7 +230,7 @@ const sendMoney = async (
           fee,
           type: TransactionType.SEND_MONEY,
           status: TransactionStatus.SUCCESSFUL,
-          referenceId: uuidv4(),
+          referenceId: crypto.randomUUID(),
           description,
         },
       ],
@@ -239,7 +239,8 @@ const sendMoney = async (
 
     await session.commitTransaction();
 
-    return { message: "Money sent successfully" };
+    const updatedWallet = await Wallet.findById(sender.wallet._id);
+    return { message: "Money sent successfully", balance: updatedWallet?.balance ?? 0 };
   } catch (error) {
     await session.abortTransaction();
     if (error instanceof AppError) {
@@ -358,7 +359,7 @@ const addMoney = async (
           fee,
           type: TransactionType.CASH_IN,
           status: TransactionStatus.SUCCESSFUL,
-          referenceId: uuidv4(),
+          referenceId: crypto.randomUUID(),
           description: "Cash in",
         },
       ],
@@ -381,13 +382,11 @@ const addMoney = async (
 
     await session.commitTransaction();
 
-    const updatedWallet = await Wallet.findById(receiverWallet._id).session(
-      session,
-    );
+    const updatedWallet = await Wallet.findById(receiverWallet._id);
 
     return {
       message: "Money added successfully",
-      wallet: updatedWallet,
+      balance: updatedWallet?.balance ?? 0,
     };
   } catch (error) {
     await session.abortTransaction();
@@ -428,11 +427,13 @@ const withdrawMoney = async (
     let fromUser;
     let transactionType: TransactionType;
 
+    const config = await SystemConfigServices.getSystemConfig();
+
     if (actor.role === Role.USER) {
       fromUser = actor;
       fromWallet = actor.wallet;
       transactionType = TransactionType.WITHDRAW;
-      await checkAndUpdateTransactionLimits(actorId, amount, session);
+      await checkAndUpdateTransactionLimits(actorId, amount, config, session);
     } else if (actor.role === Role.AGENT) {
       if (!fromId) {
         throw new AppError(
@@ -440,7 +441,6 @@ const withdrawMoney = async (
           "'fromId' is required for agents",
         );
       }
-      // Validate and safely cast fromId before using it in any database query
       if (typeof fromId !== "string" || !mongoose.Types.ObjectId.isValid(fromId)) {
         throw new AppError(
           StatusCodes.BAD_REQUEST,
@@ -456,7 +456,7 @@ const withdrawMoney = async (
       }
       fromWallet = await Wallet.findOne({ owner: { $eq: String(fromId) } }).session(session);
       transactionType = TransactionType.CASH_OUT;
-      await checkAndUpdateTransactionLimits(String(fromUser._id), amount, session);
+      await checkAndUpdateTransactionLimits(String(fromUser._id), amount, config, session);
     } else {
       throw new AppError(StatusCodes.FORBIDDEN, "Admins cannot withdraw money");
     }
@@ -475,7 +475,6 @@ const withdrawMoney = async (
       );
     }
 
-    const config = await SystemConfigServices.getSystemConfig();
     const feeRate = transactionType === TransactionType.WITHDRAW ? config.withdrawFee : config.cashOutFee;
     const fee = amount * (feeRate / 100);
     const totalDeduction = amount + fee;
@@ -522,7 +521,7 @@ const withdrawMoney = async (
           fee,
           type: transactionType,
           status: TransactionStatus.SUCCESSFUL,
-          referenceId: uuidv4(),
+          referenceId: crypto.randomUUID(),
           description: `Withdrawal by ${actor.role}`,
         },
       ],
@@ -545,7 +544,8 @@ const withdrawMoney = async (
 
     await session.commitTransaction();
 
-    return { message: "Money withdrawn successfully" };
+    const updatedWallet = await Wallet.findById(fromWallet._id);
+    return { message: "Money withdrawn successfully", balance: updatedWallet?.balance ?? 0 };
   } catch (error) {
     await session.abortTransaction();
     if (error instanceof AppError) {
@@ -612,7 +612,7 @@ const viewHistory = async (actorId: string, query: Record<string, unknown>) => {
   const total = await Transaction.countDocuments(filter);
 
   return {
-    meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    meta: { page, limit, total, totalPage: Math.ceil(total / limit) },
     data: transactions,
   };
 };
@@ -653,7 +653,7 @@ const getCommissionHistory = async (
   const total = await Transaction.countDocuments(filter);
 
   return {
-    meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    meta: { page, limit, total, totalPage: Math.ceil(total / limit) },
     data: transactions,
   };
 };

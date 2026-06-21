@@ -1,7 +1,7 @@
 import { JwtPayload } from "jsonwebtoken";
 import { envVars } from "../config/env";
 import { IsActive, IUser } from "../modules/user/user.interface";
-import { generateToken, TokenError, verifyToken } from "./jwt";
+import { generateToken, verifyToken } from "./jwt";
 import { User } from "../modules/user/user.model";
 import AppError from "../errorHelpers/AppError";
 import httpStatus from "http-status-codes";
@@ -36,18 +36,15 @@ const createNewAccessToken = async (refreshToken: string) => {
   // token verification
   let verifiedRefreshToken: JwtPayload;
   try {
-    verifiedRefreshToken = verifyToken(
+    verifiedRefreshToken = await verifyToken(
       refreshToken,
       envVars.JWT_REFRESH_SECRET,
     ) as JwtPayload;
-  } catch (err) {
-    if (err instanceof TokenError) {
-      throw new AppError(
-        httpStatus.UNAUTHORIZED,
-        "Invalid or expired refresh token",
-      );
-    }
-    throw err;
+  } catch {
+    throw new AppError(
+      httpStatus.UNAUTHORIZED,
+      "Invalid or expired refresh token",
+    );
   }
 
   if (!verifiedRefreshToken.email) {

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextFunction, Request, Response } from "express";
 import httpStatus from "http-status-codes";
 import passport from "passport";
@@ -9,9 +8,10 @@ import setAuthCookie from "../../utils/setCookie";
 import { IUser } from "../user/user.interface";
 import { AuthServices } from "./auth.service";
 import { Document } from "mongoose";
+import { envVars } from "../../config/env";
 
 const getNewAccessToken = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response) => {
     const refreshToken = req.cookies.refreshToken;
     if (!refreshToken) {
       throw new AppError(
@@ -76,7 +76,10 @@ const credentialsLogin = catchAsync(
           success: true,
           statusCode: httpStatus.OK,
           message: "User Logged In Successfully",
-          data: loginData,
+          data: {
+            ...loginData,
+            redirect: "/dashboard",
+          },
         });
       },
     )(req, res, next);
@@ -90,9 +93,18 @@ const logoutUser = catchAsync(async (req: Request, res: Response) => {
     await AuthServices.logoutUser(refreshToken);
   }
 
+  const isProduction = envVars.NODE_ENV === "production";
+  const cookieOptions = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "strict" as const : "lax" as const,
+    domain: envVars.COOKIE_DOMAIN,
+    path: "/",
+  };
+
   // Clear cookies
-  res.clearCookie("accessToken", { httpOnly: true, secure: false }); // secure should be true in production
-  res.clearCookie("refreshToken", { httpOnly: true, secure: false });
+  res.clearCookie("accessToken", cookieOptions);
+  res.clearCookie("refreshToken", cookieOptions);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -138,6 +150,21 @@ const resetPassword = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getDemoUsers = catchAsync(async (_req: Request, res: Response) => {
+  const demoUsers = [
+    { label: "Demo User", email: envVars.DEMO_USER_EMAIL, role: "USER" },
+    { label: "Demo Agent", email: envVars.DEMO_AGENT_EMAIL, role: "AGENT" },
+    { label: "Demo Admin", email: envVars.DEMO_ADMIN_EMAIL, role: "ADMIN" },
+  ];
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Demo users retrieved successfully",
+    data: demoUsers,
+  });
+});
+
 export const AuthControllers = {
   getNewAccessToken,
   registerUser,
@@ -146,4 +173,5 @@ export const AuthControllers = {
   verifyEmail,
   forgotPassword,
   resetPassword,
+  getDemoUsers,
 };

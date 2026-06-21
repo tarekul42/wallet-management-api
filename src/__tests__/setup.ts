@@ -1,0 +1,14 @@
+process.env.PORT = "5000";
+process.env.NODE_ENV = "development";
+process.env.DB_URL = "mongodb://localhost:27017/test";
+process.env.CORS_ORIGIN = "http://localhost:3000";
+process.env.COOKIE_DOMAIN = "localhost";
+process.env.JWT_ACCESS_SECRET = "test-access-secret";
+process.env.JWT_ACCESS_EXPIRES = "15m";
+process.env.JWT_REFRESH_SECRET = "test-refresh-secret";
+process.env.JWT_REFRESH_EXPIRES = "30d";
+process.env.BCRYPT_SALT_ROUND = "10";
+process.env.SUPER_ADMIN_EMAIL = "admin@test.com";
+process.env.SUPER_ADMIN_PASSWORD = "Admin123!";
+process.env.CLIENT_URL = "http://localhost:3000";
+process.env.EXPRESS_SESSION_SECRET = "test-session-secret";

@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { StatusCodes } from "http-status-codes";
-import mongoose from "mongoose";
+import mongoose, { Document } from "mongoose";
 import AppError from "../../errorHelpers/AppError";
 import { ApprovalStatus, IUser } from "../user/user.interface";
 import { User } from "../user/user.model";
@@ -104,11 +102,12 @@ const registerUser = async (payload: IUser) => {
   return result;
 };
 
-const credentialsLogin = async (user: any) => {
+const credentialsLogin = async (user: IUser & Document) => {
   const userTokens = createUserTokens(user);
 
   const userObject = user.toObject();
-  const { password, ...sanitizedUser } = userObject;
+  delete userObject.password;
+  const sanitizedUser = userObject;
 
   return {
     user: sanitizedUser,
@@ -122,12 +121,12 @@ const logoutUser = async (refreshToken: string) => {
       refreshToken,
       envVars.JWT_REFRESH_SECRET
     );
-    const userId = decodedToken.id;
+    const userId = decodedToken.userId;
 
     await User.findByIdAndUpdate(userId, { $inc: { tokenVersion: 1 } });
 
     return { message: "Logged out successfully." };
-  } catch (error) {
+  } catch {
     // We swallow the error and return success to prevent token enumeration/leaking state
     // If the token is invalid, the user is effectively logged out anyway
     return { message: "Logged out successfully." };

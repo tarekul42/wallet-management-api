@@ -20,7 +20,7 @@ const sendMoney = catchAsync(async (req: Request, res: Response) => {
     success: true,
     statusCode: httpStatus.OK,
     message: result.message,
-    data: null, // No extra data needed, message is sufficient
+    data: { balance: result.balance },
   });
 });
 
@@ -38,7 +38,7 @@ const addMoney = catchAsync(async (req: Request, res: Response) => {
     success: true,
     statusCode: httpStatus.OK,
     message: result.message,
-    data: result, // No extra data needed, message is sufficient
+    data: { balance: result.balance },
   });
 });
 
@@ -56,7 +56,7 @@ const withdrawMoney = catchAsync(async (req: Request, res: Response) => {
     success: true,
     statusCode: httpStatus.OK,
     message: result.message,
-    data: null, // No extra data needed, message is sufficient
+    data: { balance: result.balance },
   });
 });
 
@@ -69,7 +69,8 @@ const viewHistory = catchAsync(async (req: Request, res: Response) => {
     success: true,
     statusCode: StatusCodes.OK,
     message: "Transaction history retrieved successfully",
-    data: result,
+    meta: result.meta,
+    data: result.data,
   });
 });
 
@@ -85,7 +86,8 @@ const getCommissionHistory = catchAsync(async (req: Request, res: Response) => {
     success: true,
     statusCode: httpStatus.OK,
     message: "Commission history retrieved successfully",
-    data: result,
+    meta: result.meta,
+    data: result.data,
   });
 });
 

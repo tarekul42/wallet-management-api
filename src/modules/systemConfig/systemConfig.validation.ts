@@ -37,6 +37,11 @@ const updateSystemConfigValidationSchema = z.object({
         .number()
         .min(0, "Minimum balance must be at least 0")
         .optional(),
+    cashOutFee: z
+        .number()
+        .min(0, "Cash out fee must be at least 0")
+        .max(100, "Cash out fee cannot exceed 100")
+        .optional(),
 });
 
 export const SystemConfigValidations = {
