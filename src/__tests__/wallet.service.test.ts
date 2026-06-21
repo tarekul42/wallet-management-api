@@ -8,8 +8,8 @@ import { StatusCodes } from "http-status-codes";
 const mockUserFindById = mock(() => Promise.resolve(null));
 const mockWalletFindById = mock(() => Promise.resolve(null));
 const mockWalletFind = mock(() => Promise.resolve([]));
-const mockNotifyWalletBlocked = mock(() => {});
-const mockNotifyWalletUnblocked = mock(() => {});
+const mockNotifyWalletBlocked = mock(() => undefined);
+const mockNotifyWalletUnblocked = mock(() => undefined);
 
 mock.module("../config/env", () => ({
   envVars: {

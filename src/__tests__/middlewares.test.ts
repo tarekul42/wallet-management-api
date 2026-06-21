@@ -2,6 +2,19 @@ import { describe, expect, test, mock, beforeEach } from "bun:test";
 import mongoose from "mongoose";
 import { z, ZodError } from "zod";
 import httpStatus from "http-status-codes";
+import type { Request, Response, NextFunction } from "express";
+
+interface MockRequestFields {
+  body?: Record<string, unknown>;
+  headers?: Record<string, string | undefined>;
+  originalUrl?: string;
+  user?: Record<string, unknown>;
+}
+
+interface MockResponseFields {
+  status: (code: number) => MockResponseFields;
+  json: (...args: unknown[]) => void;
+}
 
 const envMock: Record<string, string> = {
   NODE_ENV: "development",
@@ -42,10 +55,10 @@ function flush() {
 }
 
 function mockReqRes() {
-  const req = {} as any;
-  const res = { status: mock(() => res), json: mock() } as any;
+  const req: MockRequestFields = {};
+  const res: MockResponseFields = { status: mock(() => res), json: mock() };
   const next = mock();
-  return { req, res, next };
+  return { req: req as unknown as Request, res: res as unknown as Response, next: next as unknown as NextFunction };
 }
 
 const validUser = {
@@ -75,7 +88,7 @@ describe("globalErrorHandler", () => {
   test("catches mongoose ValidationError", () => {
     const { req, res, next } = mockReqRes();
     const err = new mongoose.Error.ValidationError();
-    err.errors = { email: { path: "email", message: "Invalid email" } as any };
+    err.errors = { email: { path: "email", message: "Invalid email" } } as unknown as mongoose.Error.ValidationError["errors"];
     globalErrorHandler(err, req, res, next);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(
@@ -86,7 +99,7 @@ describe("globalErrorHandler", () => {
   test("includes errorSources for ValidationError", () => {
     const { req, res, next } = mockReqRes();
     const err = new mongoose.Error.ValidationError();
-    err.errors = { name: { path: "name", message: "Path `name` is required." } as any };
+    err.errors = { name: { path: "name", message: "Path `name` is required." } } as unknown as mongoose.Error.ValidationError["errors"];
     globalErrorHandler(err, req, res, next);
     const body = (res.json as ReturnType<typeof mock>).mock.calls[0][0];
     expect(body.errorSources).toBeDefined();
@@ -100,7 +113,7 @@ describe("globalErrorHandler", () => {
   test("catches duplicate key error (code 11000)", () => {
     const { req, res, next } = mockReqRes();
     const err = new Error('E11000 duplicate key error collection: test.users index: email_1 dup key: { email: "test@test.com" }');
-    (err as any).code = 11000;
+    Object.assign(err, { code: 11000 });
     globalErrorHandler(err, req, res, next);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(
@@ -185,8 +198,8 @@ describe("globalErrorHandler", () => {
 
 describe("notFound", () => {
   test("returns 404 with route not found message", () => {
-    const req = { originalUrl: "/api/unknown/route" } as any;
-    const res = { status: mock(() => res), json: mock() } as any;
+    const req = { originalUrl: "/api/unknown/route" } as unknown as Request;
+    const res = { status: mock(() => res), json: mock() } as unknown as Response;
     notFound(req, res);
     expect(res.status).toHaveBeenCalledWith(httpStatus.NOT_FOUND);
     expect(res.json).toHaveBeenCalledWith({
@@ -196,8 +209,8 @@ describe("notFound", () => {
   });
 
   test("response has correct format", () => {
-    const req = { originalUrl: "/test" } as any;
-    const res = { status: mock(() => res), json: mock() } as any;
+    const req = { originalUrl: "/test" } as unknown as Request;
+    const res = { status: mock(() => res), json: mock() } as unknown as Response;
     notFound(req, res);
     const body = (res.json as ReturnType<typeof mock>).mock.calls[0][0];
     expect(body).toHaveProperty("success", false);
@@ -212,47 +225,47 @@ describe("validateRequest", () => {
   const schema = z.object({ name: z.string(), age: z.number().optional() });
 
   test("calls next() when validation passes", async () => {
-    const req = { body: { name: "Alice", age: 30 } } as any;
+    const req = { body: { name: "Alice", age: 30 } } as unknown as Request;
     const next = mock();
-    await validateRequest(schema)(req, {} as any, next);
+    await validateRequest(schema)(req, {} as unknown as Response, next);
     expect(next).toHaveBeenCalledWith();
     expect(req.body).toEqual({ name: "Alice", age: 30 });
   });
 
   test("parses req.body.data string then validates", async () => {
-    const req = { body: { data: JSON.stringify({ name: "Bob", age: 25 }) } } as any;
+    const req = { body: { data: JSON.stringify({ name: "Bob", age: 25 }) } } as unknown as Request;
     const next = mock();
-    await validateRequest(schema)(req, {} as any, next);
+    await validateRequest(schema)(req, {} as unknown as Response, next);
     expect(next).toHaveBeenCalledWith();
     expect(req.body).toEqual({ name: "Bob", age: 25 });
   });
 
   test("calls next(error) when validation fails with ZodError", async () => {
-    const req = { body: { name: 123, age: "invalid" } } as any;
+    const req = { body: { name: 123, age: "invalid" } } as unknown as Request;
     const next = mock();
-    await validateRequest(schema)(req, {} as any, next);
+    await validateRequest(schema)(req, {} as unknown as Response, next);
     expect(next).toHaveBeenCalledWith(expect.any(ZodError));
   });
 
   test("calls next(error) when parsed body.data fails validation", async () => {
-    const req = { body: { data: JSON.stringify({ name: 999 }) } } as any;
+    const req = { body: { data: JSON.stringify({ name: 999 }) } } as unknown as Request;
     const next = mock();
-    await validateRequest(schema)(req, {} as any, next);
+    await validateRequest(schema)(req, {} as unknown as Response, next);
     expect(next).toHaveBeenCalledWith(expect.any(ZodError));
   });
 
   test("replaces req.body with parsed data when body.data is a string", async () => {
-    const req = { body: { data: JSON.stringify({ name: "Carol" }) } } as any;
+    const req = { body: { data: JSON.stringify({ name: "Carol" }) } } as unknown as Request;
     const next = mock();
-    await validateRequest(schema)(req, {} as any, next);
+    await validateRequest(schema)(req, {} as unknown as Response, next);
     expect(req.body.name).toBe("Carol");
     expect(req.body).not.toHaveProperty("data");
   });
 
   test("handles empty body gracefully", async () => {
-    const req = { body: {} } as any;
+    const req = { body: {} } as unknown as Request;
     const next = mock();
-    await validateRequest(schema)(req, {} as any, next);
+    await validateRequest(schema)(req, {} as unknown as Response, next);
     expect(next).toHaveBeenCalledWith(expect.any(ZodError));
   });
 });
@@ -270,9 +283,9 @@ describe("checkAuth", () => {
     mockVerifyToken.mockResolvedValue(tokenPayload);
     mockUserFindById.mockResolvedValue(validUser);
 
-    const req = { headers: { authorization: "Bearer valid-token" }, user: {} } as any;
+    const req = { headers: { authorization: "Bearer valid-token" }, user: {} } as unknown as Request;
     const next = mock();
-    checkAuth()(req, {} as any, next);
+    checkAuth()(req, {} as unknown as Response, next);
     await flush();
 
     expect(next).toHaveBeenCalled();
@@ -281,9 +294,9 @@ describe("checkAuth", () => {
   });
 
   test("throws 401 when authorization header is missing", async () => {
-    const req = { headers: {}, user: {} } as any;
+    const req = { headers: {}, user: {} } as unknown as Request;
     const next = mock();
-    checkAuth()(req, {} as any, next);
+    checkAuth()(req, {} as unknown as Response, next);
     await flush();
 
     expect(next).toHaveBeenCalledWith(expect.any(AppError));
@@ -292,9 +305,9 @@ describe("checkAuth", () => {
   });
 
   test("throws 401 when authorization header does not start with Bearer", async () => {
-    const req = { headers: { authorization: "Basic dGVzdDp0ZXN0" }, user: {} } as any;
+    const req = { headers: { authorization: "Basic dGVzdDp0ZXN0" }, user: {} } as unknown as Request;
     const next = mock();
-    checkAuth()(req, {} as any, next);
+    checkAuth()(req, {} as unknown as Response, next);
     await flush();
 
     expect(next).toHaveBeenCalledWith(expect.any(AppError));
@@ -302,9 +315,9 @@ describe("checkAuth", () => {
   });
 
   test("throws 401 when token part is empty after Bearer", async () => {
-    const req = { headers: { authorization: "Bearer " }, user: {} } as any;
+    const req = { headers: { authorization: "Bearer " }, user: {} } as unknown as Request;
     const next = mock();
-    checkAuth()(req, {} as any, next);
+    checkAuth()(req, {} as unknown as Response, next);
     await flush();
 
     expect(next).toHaveBeenCalledWith(expect.any(AppError));
@@ -314,9 +327,9 @@ describe("checkAuth", () => {
 
   test("throws 401 when verifyToken returns null (no userId)", async () => {
     mockVerifyToken.mockResolvedValue(null);
-    const req = { headers: { authorization: "Bearer invalid-token" }, user: {} } as any;
+    const req = { headers: { authorization: "Bearer invalid-token" }, user: {} } as unknown as Request;
     const next = mock();
-    checkAuth()(req, {} as any, next);
+    checkAuth()(req, {} as unknown as Response, next);
     await flush();
 
     expect(next).toHaveBeenCalledWith(expect.any(AppError));
@@ -326,9 +339,9 @@ describe("checkAuth", () => {
 
   test("throws 401 when verifyToken returns object without userId", async () => {
     mockVerifyToken.mockResolvedValue({ some: "data" });
-    const req = { headers: { authorization: "Bearer weird-token" }, user: {} } as any;
+    const req = { headers: { authorization: "Bearer weird-token" }, user: {} } as unknown as Request;
     const next = mock();
-    checkAuth()(req, {} as any, next);
+    checkAuth()(req, {} as unknown as Response, next);
     await flush();
 
     expect(next).toHaveBeenCalledWith(expect.any(AppError));
@@ -338,9 +351,9 @@ describe("checkAuth", () => {
   test("throws 401 when user is not found in database", async () => {
     mockVerifyToken.mockResolvedValue({ userId: "nonexistent" });
     mockUserFindById.mockResolvedValue(null);
-    const req = { headers: { authorization: "Bearer token" }, user: {} } as any;
+    const req = { headers: { authorization: "Bearer token" }, user: {} } as unknown as Request;
     const next = mock();
-    checkAuth()(req, {} as any, next);
+    checkAuth()(req, {} as unknown as Response, next);
     await flush();
 
     expect(next).toHaveBeenCalledWith(expect.any(AppError));
@@ -351,9 +364,9 @@ describe("checkAuth", () => {
   test("throws 401 when user account is deleted", async () => {
     mockVerifyToken.mockResolvedValue({ userId: "user123" });
     mockUserFindById.mockResolvedValue({ ...validUser, isDeleted: true });
-    const req = { headers: { authorization: "Bearer token" }, user: {} } as any;
+    const req = { headers: { authorization: "Bearer token" }, user: {} } as unknown as Request;
     const next = mock();
-    checkAuth()(req, {} as any, next);
+    checkAuth()(req, {} as unknown as Response, next);
     await flush();
 
     expect(next).toHaveBeenCalledWith(expect.any(AppError));
@@ -364,9 +377,9 @@ describe("checkAuth", () => {
   test("throws 403 when user account is blocked", async () => {
     mockVerifyToken.mockResolvedValue({ userId: "user123" });
     mockUserFindById.mockResolvedValue({ ...validUser, isActive: "BLOCKED" });
-    const req = { headers: { authorization: "Bearer token" }, user: {} } as any;
+    const req = { headers: { authorization: "Bearer token" }, user: {} } as unknown as Request;
     const next = mock();
-    checkAuth()(req, {} as any, next);
+    checkAuth()(req, {} as unknown as Response, next);
     await flush();
 
     expect(next).toHaveBeenCalledWith(expect.any(AppError));
@@ -377,9 +390,9 @@ describe("checkAuth", () => {
   test("throws 401 when user account is not verified", async () => {
     mockVerifyToken.mockResolvedValue({ userId: "user123" });
     mockUserFindById.mockResolvedValue({ ...validUser, isVerified: false });
-    const req = { headers: { authorization: "Bearer token" }, user: {} } as any;
+    const req = { headers: { authorization: "Bearer token" }, user: {} } as unknown as Request;
     const next = mock();
-    checkAuth()(req, {} as any, next);
+    checkAuth()(req, {} as unknown as Response, next);
     await flush();
 
     expect(next).toHaveBeenCalledWith(expect.any(AppError));
@@ -390,9 +403,9 @@ describe("checkAuth", () => {
   test("throws 403 when user role is insufficient for required roles", async () => {
     mockVerifyToken.mockResolvedValue({ userId: "user123" });
     mockUserFindById.mockResolvedValue(validUser);
-    const req = { headers: { authorization: "Bearer token" }, user: {} } as any;
+    const req = { headers: { authorization: "Bearer token" }, user: {} } as unknown as Request;
     const next = mock();
-    checkAuth("ADMIN")(req, {} as any, next);
+    checkAuth("ADMIN")(req, {} as unknown as Response, next);
     await flush();
 
     expect(next).toHaveBeenCalledWith(expect.any(AppError));
@@ -403,9 +416,9 @@ describe("checkAuth", () => {
   test("passes when user has sufficient role", async () => {
     mockVerifyToken.mockResolvedValue({ userId: "admin123" });
     mockUserFindById.mockResolvedValue({ ...validUser, role: "ADMIN" });
-    const req = { headers: { authorization: "Bearer admin-token" }, user: {} } as any;
+    const req = { headers: { authorization: "Bearer admin-token" }, user: {} } as unknown as Request;
     const next = mock();
-    checkAuth("ADMIN")(req, {} as any, next);
+    checkAuth("ADMIN")(req, {} as unknown as Response, next);
     await flush();
 
     expect(next).toHaveBeenCalled();
@@ -415,9 +428,9 @@ describe("checkAuth", () => {
   test("passes with no role restrictions (empty authRoles)", async () => {
     mockVerifyToken.mockResolvedValue({ userId: "user123" });
     mockUserFindById.mockResolvedValue(validUser);
-    const req = { headers: { authorization: "Bearer any-role" }, user: {} } as any;
+    const req = { headers: { authorization: "Bearer any-role" }, user: {} } as unknown as Request;
     const next = mock();
-    checkAuth()(req, {} as any, next);
+    checkAuth()(req, {} as unknown as Response, next);
     await flush();
 
     expect(next).toHaveBeenCalledWith();
@@ -426,9 +439,9 @@ describe("checkAuth", () => {
   test("calls User.findById with the userId from token", async () => {
     mockVerifyToken.mockResolvedValue({ userId: "user123" });
     mockUserFindById.mockResolvedValue(validUser);
-    const req = { headers: { authorization: "Bearer token" }, user: {} } as any;
+    const req = { headers: { authorization: "Bearer token" }, user: {} } as unknown as Request;
     const next = mock();
-    checkAuth()(req, {} as any, next);
+    checkAuth()(req, {} as unknown as Response, next);
     await flush();
 
     expect(mockUserFindById).toHaveBeenCalledWith("user123");

@@ -78,8 +78,22 @@ const mockSystemSettings = {
 };
 
 // ===== QUERY MOCK HELPER =====
-function createMockQuery<T>(data: T) {
-  const query: any = {
+interface MockQuery<T> {
+  sort: () => MockQuery<T>;
+  select: () => MockQuery<T>;
+  populate: () => MockQuery<T>;
+  lean: () => MockQuery<T>;
+  limit: () => MockQuery<T>;
+  skip: () => MockQuery<T>;
+  collation: () => MockQuery<T>;
+  exec: () => Promise<T>;
+  then: (resolve: (value: T) => unknown) => Promise<T>;
+  catch: (reject: (reason: unknown) => unknown) => Promise<T>;
+  finally: (cb: () => void) => Promise<T>;
+}
+
+function createMockQuery<T>(data: T): MockQuery<T> {
+  const query: MockQuery<T> = {
     sort: () => query,
     select: () => query,
     populate: () => query,
@@ -207,8 +221,9 @@ mock.module("../config/env", () => ({
 
 // ===== DYNAMIC IMPORT =====
 import request from "supertest";
+import type { Express } from "express";
 
-let app: any;
+let app: Express;
 
 beforeAll(async () => {
   app = (await import("../app")).default;
