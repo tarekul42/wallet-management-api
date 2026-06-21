@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "bun run build",
+  "buildCommand": "bun build ./src/server.ts --outdir ./dist --target node",
   "outputDirectory": "dist",
   "devCommand": "bun run dev",
   "installCommand": "bun install",
