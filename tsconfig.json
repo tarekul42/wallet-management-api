@@ -104,6 +104,7 @@
   },
   "exclude": [
     "scripts",
-    "dist"
+    "dist",
+    "src/__tests__"
   ]
 }

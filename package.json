@@ -2,10 +2,10 @@
   "name": "wallet-management-api",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/server.js",
   "scripts": {
     "dev": "bun --watch src/server.ts",
-    "build": "bun build ./src/server.ts --outdir ./dist --target bun",
+    "build": "bun build ./src/server.ts --outdir ./dist --target node",
     "start": "bun dist/server.js",
     "test": "bun test --preload ./src/__tests__/setup.ts",
     "seed": "bun scripts/seed.ts",
@@ -15,7 +15,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@types/cookie-parser": "^1.4.10",

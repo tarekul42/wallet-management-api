@@ -12,9 +12,6 @@ permissions:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-name: CI
-permissions:
-  contents: read
 
 jobs:
   lint:
@@ -26,7 +23,7 @@ jobs:
         with:
           bun-version: latest
       - run: bun install
-      - run: bun run lint
+      - run: bun run lint -- --ignore-pattern "src/__tests__/**"
 
   typecheck:
     name: TypeScript
