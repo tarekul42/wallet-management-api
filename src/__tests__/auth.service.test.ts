@@ -1,6 +1,5 @@
 import { describe, expect, test, mock, spyOn, beforeEach, afterEach } from "bun:test";
 import mongoose from "mongoose";
-import { StatusCodes } from "http-status-codes";
 import crypto from "crypto";
 
 // =========================================================================
@@ -86,19 +85,19 @@ mock.module("../config/env", () => ({
 }));
 
 // ----- notification utils -----
-const mockNotifyRegistration = mock(() => {});
+const mockNotifyRegistration = mock(() => undefined);
 mock.module("../utils/notification.utils", () => ({
   notifyRegistration: mockNotifyRegistration,
-  notifyTransaction: mock(() => {}),
-  notifyWalletBlocked: mock(() => {}),
-  notifyWalletUnblocked: mock(() => {}),
-  notifyAgentApproved: mock(() => {}),
-  notifyAgentSuspended: mock(() => {}),
-  notifyPasswordReset: mock(() => {}),
+  notifyTransaction: mock(() => undefined),
+  notifyWalletBlocked: mock(() => undefined),
+  notifyWalletUnblocked: mock(() => undefined),
+  notifyAgentApproved: mock(() => undefined),
+  notifyAgentSuspended: mock(() => undefined),
+  notifyPasswordReset: mock(() => undefined),
 }));
 
 // ----- auth utils (generateToken / sendMockEmail) -----
-const mockSendEmail = mock(() => {});
+const mockSendEmail = mock(() => undefined);
 mock.module("../modules/auth/auth.utils", () => ({
   generateToken: () => crypto.randomBytes(32).toString("hex"),
   sendMockEmail: mockSendEmail,
@@ -120,7 +119,7 @@ const authService = AuthServices;
  *  `toObject()` skips password just like mongoose does with `select: false`.
  */
 function fakeUserDoc(overrides: Record<string, unknown> = {}) {
-  const doc: Record<string, any> = {
+  const doc: Record<string, unknown> = {
     _id: "user-abc-123",
     name: "John Doe",
     email: "john@example.com",
@@ -149,21 +148,27 @@ function fakeUserDoc(overrides: Record<string, unknown> = {}) {
   };
 
   doc.toObject = function () {
-    const { toObject, save, ...rest } = doc;
-    // Mimic mongoose's `select: false` on password
-    const { password: _pw, ...noPassword } = rest;
+    const { password, ...noPassword } = doc;
+    void password;
     return noPassword;
   };
 
   return doc;
 }
 
-const mockSession = {
-  startTransaction: mock(() => {}),
+interface MockSession {
+  startTransaction: ReturnType<typeof mock>;
+  commitTransaction: ReturnType<typeof mock>;
+  abortTransaction: ReturnType<typeof mock>;
+  endSession: ReturnType<typeof mock>;
+}
+
+const mockSession: MockSession = {
+  startTransaction: mock(() => undefined),
   commitTransaction: mock(() => Promise.resolve()),
   abortTransaction: mock(() => Promise.resolve()),
-  endSession: mock(() => {}),
-} as any;
+  endSession: mock(() => undefined),
+};
 
 // =========================================================================
 // TESTS
@@ -214,7 +219,7 @@ describe("AuthServices.registerUser", () => {
     role: "USER",
   };
 
-  let createdUser: Record<string, any>;
+  let createdUser: Record<string, unknown>;
   let sessionSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
@@ -234,7 +239,7 @@ describe("AuthServices.registerUser", () => {
     mockNotifyRegistration.mockReset();
 
     sessionSpy = spyOn(mongoose, "startSession").mockImplementation(() =>
-      Promise.resolve(mockSession as any)
+      Promise.resolve(mockSession as unknown as mongoose.ClientSession)
     );
   });
 
@@ -254,7 +259,7 @@ describe("AuthServices.registerUser", () => {
   });
 
   test("throws AppError(400) when email is not a string", async () => {
-    const payload = { ...validPayload, email: 123 as any };
+    const payload = { ...validPayload, email: 123 as unknown as string };
 
     expect(authService.registerUser(payload)).rejects.toThrow(AppError);
     expect(authService.registerUser(payload)).rejects.toHaveProperty("statusCode", 400);
@@ -363,7 +368,7 @@ describe("AuthServices.registerUser", () => {
   });
 
   test("aborts transaction when wallet creation fails", async () => {
-    const user = { _id: "id", wallet: undefined, save: mock(() => {}) };
+    const user = { _id: "id", wallet: undefined, save: mock(() => undefined) };
     mockUserCreate.mockImplementation(() => Promise.resolve([user]));
     mockWalletCreate.mockImplementation(() => Promise.resolve([]));
 
@@ -420,11 +425,12 @@ describe("AuthServices.credentialsLogin", () => {
       tokenVersion: 2,
       wallet: "wallet-456",
       toObject: function () {
-        const { toObject, save, password: _pw, ...rest } = this;
+        const { password, ...rest } = this;
+        void password;
         return rest;
       },
     };
-    return user as any;
+    return user as unknown as Record<string, unknown>;
   };
 
   test("returns sanitized user without password plus tokens", async () => {
@@ -552,17 +558,17 @@ describe("AuthServices.verifyEmail", () => {
   });
 
   test("throws AppError(400) when token is not a string", async () => {
-    expect(authService.verifyEmail(123 as any)).rejects.toThrow(AppError);
-    expect(authService.verifyEmail(123 as any)).rejects.toHaveProperty("statusCode", 400);
-    expect(authService.verifyEmail(123 as any)).rejects.toHaveProperty(
+    expect(authService.verifyEmail(123 as unknown as string)).rejects.toThrow(AppError);
+    expect(authService.verifyEmail(123 as unknown as string)).rejects.toHaveProperty("statusCode", 400);
+    expect(authService.verifyEmail(123 as unknown as string)).rejects.toHaveProperty(
       "message",
       "Invalid verification token"
     );
   });
 
   test("throws AppError(400) when token is an object", async () => {
-    expect(authService.verifyEmail({} as any)).rejects.toThrow(AppError);
-    expect(authService.verifyEmail({} as any)).rejects.toHaveProperty("statusCode", 400);
+    expect(authService.verifyEmail({} as unknown as string)).rejects.toThrow(AppError);
+    expect(authService.verifyEmail({} as unknown as string)).rejects.toHaveProperty("statusCode", 400);
   });
 
   test("throws AppError(400) when user is not found with that token", async () => {
@@ -591,7 +597,7 @@ describe("AuthServices.verifyEmail", () => {
   test("uses $eq operator to prevent NoSQL injection", async () => {
     mockUserFindOne.mockImplementation(() => Promise.resolve(null));
 
-    await authService.verifyEmail(validToken).catch(() => {});
+    await authService.verifyEmail(validToken).catch(() => undefined);
 
     expect(mockUserFindOne).toHaveBeenCalledWith({
       verificationToken: { $eq: validToken },
@@ -611,14 +617,14 @@ describe("AuthServices.forgotPassword", () => {
   });
 
   test("throws AppError(400) when email is not a string", async () => {
-    expect(authService.forgotPassword(123 as any)).rejects.toThrow(AppError);
-    expect(authService.forgotPassword(123 as any)).rejects.toHaveProperty("statusCode", 400);
-    expect(authService.forgotPassword(123 as any)).rejects.toHaveProperty("message", "Invalid email");
+    expect(authService.forgotPassword(123 as unknown as string)).rejects.toThrow(AppError);
+    expect(authService.forgotPassword(123 as unknown as string)).rejects.toHaveProperty("statusCode", 400);
+    expect(authService.forgotPassword(123 as unknown as string)).rejects.toHaveProperty("message", "Invalid email");
   });
 
   test("throws AppError(400) when email is an object", async () => {
-    expect(authService.forgotPassword({} as any)).rejects.toThrow(AppError);
-    expect(authService.forgotPassword({} as any)).rejects.toHaveProperty("statusCode", 400);
+    expect(authService.forgotPassword({} as unknown as string)).rejects.toThrow(AppError);
+    expect(authService.forgotPassword({} as unknown as string)).rejects.toHaveProperty("statusCode", 400);
   });
 
   test("throws AppError(404) when user not found", async () => {
@@ -653,7 +659,7 @@ describe("AuthServices.forgotPassword", () => {
   test("uses $eq operator to prevent NoSQL injection", async () => {
     mockUserFindOne.mockImplementation(() => Promise.resolve(null));
 
-    await authService.forgotPassword(validEmail).catch(() => {});
+    await authService.forgotPassword(validEmail).catch(() => undefined);
 
     expect(mockUserFindOne).toHaveBeenCalledWith({
       email: { $eq: validEmail },
@@ -684,7 +690,7 @@ describe("AuthServices.resetPassword", () => {
    * Helper: returns a chainable mock for User.findOne().select("+password")
    * that resolves to the given user document (or null).
    */
-  function mockFindOneChain(user: Record<string, any> | null) {
+  function mockFindOneChain(user: Record<string, unknown> | null) {
     const select = mock(() => Promise.resolve(user));
     const findOneResult = { select };
     mockUserFindOne.mockImplementation(() => findOneResult);
@@ -729,7 +735,7 @@ describe("AuthServices.resetPassword", () => {
   test("uses $eq operator on resetPasswordToken", async () => {
     mockFindOneChain(null);
 
-    await authService.resetPassword(validToken, newPassword).catch(() => {});
+    await authService.resetPassword(validToken, newPassword).catch(() => undefined);
 
     expect(mockUserFindOne).toHaveBeenCalledWith({
       resetPasswordToken: { $eq: validToken },
@@ -739,7 +745,7 @@ describe("AuthServices.resetPassword", () => {
   test("calls .select('+password') on the query", async () => {
     const { select } = mockFindOneChain(null);
 
-    await authService.resetPassword(validToken, newPassword).catch(() => {});
+    await authService.resetPassword(validToken, newPassword).catch(() => undefined);
 
     expect(select).toHaveBeenCalledWith("+password");
   });
@@ -848,16 +854,23 @@ describe("AuthServices - edge cases", () => {
   });
 
   test("credentialsLogin handles user with minimal fields", async () => {
-    const minimalUser = {
+    const minimalUser: {
+      _id: string;
+      email: string;
+      role: string;
+      password: string;
+      toObject(): Record<string, unknown>;
+    } = {
       _id: "min-id",
       email: "min@test.com",
       role: "AGENT",
       password: "secret",
       toObject: function () {
-        const { toObject, save, password: _pw, ...rest } = this;
+        const { password, ...rest } = this;
+        void password;
         return rest;
       },
-    } as any;
+    };
 
     const result = await authService.credentialsLogin(minimalUser);
 

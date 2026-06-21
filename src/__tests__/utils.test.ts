@@ -90,8 +90,14 @@ const { createUserTokens, createNewAccessToken } = userTokensModule;
 // HELPERS
 // =========================================================================
 
+interface MockRes {
+  status: (code: number) => MockRes;
+  json: (body: unknown) => MockRes;
+  cookie: (name: string, val: string, opts?: unknown) => MockRes;
+}
+
 function mockResponse() {
-  const res: any = {};
+  const res = {} as MockRes;
   res.status = mock(() => res);
   res.json = mock(() => res);
   res.cookie = mock(() => res);
@@ -99,7 +105,7 @@ function mockResponse() {
 }
 
 function mockRequest(overrides: Record<string, unknown> = {}) {
-  return { body: {}, params: {}, query: {}, ...overrides } as any;
+  return { body: {}, params: {}, query: {}, ...overrides } as unknown;
 }
 
 // =========================================================================
@@ -191,8 +197,8 @@ describe("handleValidationError", () => {
   test("returns validation error with error sources", () => {
     const validationError = new mongoose.Error.ValidationError();
     validationError.errors = {
-      name: { path: "name", message: "Name is required", name: "ValidatorError" } as any,
-      email: { path: "email", message: "Invalid email", name: "ValidatorError" } as any,
+      name: { path: "name", message: "Name is required", name: "ValidatorError" } as unknown as mongoose.Error.ValidatorError,
+      email: { path: "email", message: "Invalid email", name: "ValidatorError" } as unknown as mongoose.Error.ValidatorError,
     };
 
     const result = handleValidationError(validationError);
@@ -221,7 +227,7 @@ describe("handleValidationError", () => {
   test("handles CastError entries within validation errors", () => {
     const validationError = new mongoose.Error.ValidationError();
     validationError.errors = {
-      age: { path: "age", message: "Cast to Number failed", name: "CastError" } as any,
+      age: { path: "age", message: "Cast to Number failed", name: "CastError" } as unknown as mongoose.Error.ValidatorError,
     };
 
     const result = handleValidationError(validationError);
@@ -251,7 +257,7 @@ describe("handleZodError", () => {
       zodError = e as z.ZodError;
     }
 
-    const result = handleZodError(zodError!);
+    const result = handleZodError(zodError as z.ZodError);
 
     expect(result.statusCode).toBe(StatusCodes.BAD_REQUEST);
     expect(result.message).toBe("Zod Error");
@@ -266,7 +272,7 @@ describe("handleZodError", () => {
       zodError = e as z.ZodError;
     }
 
-    expect(() => handleZodError(zodError!)).not.toThrow();
+    expect(() => handleZodError(zodError as z.ZodError)).not.toThrow();
   });
 });
 
@@ -279,7 +285,7 @@ describe("catchAsync", () => {
     const wrapped = catchAsync(fn);
     const req = mockRequest();
     const res = mockResponse();
-    const next = mock(() => {});
+    const next = mock(() => undefined);
 
     await wrapped(req, res, next);
 
@@ -290,7 +296,7 @@ describe("catchAsync", () => {
     const error = new Error("Something went wrong");
     const fn = mock(() => Promise.reject(error));
     const wrapped = catchAsync(fn);
-    const next = mock(() => {});
+    const next = mock(() => undefined);
 
     await wrapped(mockRequest(), mockResponse(), next);
 
@@ -301,7 +307,7 @@ describe("catchAsync", () => {
     const appError = new AppError(403, "Forbidden");
     const fn = mock(() => Promise.reject(appError));
     const wrapped = catchAsync(fn);
-    const next = mock(() => {});
+    const next = mock(() => undefined);
 
     await wrapped(mockRequest(), mockResponse(), next);
 
@@ -310,11 +316,11 @@ describe("catchAsync", () => {
 
   test("works with a resolved promise", async () => {
     const result: string[] = [];
-    const fn = async (_req: any, _res: any, _next: any) => {
+    const fn = async () => {
       result.push("done");
     };
     const wrapped = catchAsync(fn);
-    const next = mock(() => {});
+    const next = mock(() => undefined);
 
     await wrapped(mockRequest(), mockResponse(), next);
 
@@ -742,7 +748,7 @@ describe("userTokens", () => {
     });
 
     test("generates token with userId, email, role (not tokenVersion)", async () => {
-      const token = await createNewAccessToken("t");
+      await createNewAccessToken("t");
 
       const lastPayload = mockSign.mock.calls[0][0];
       expect(lastPayload).toHaveProperty("userId", "u1");
@@ -758,35 +764,35 @@ describe("userTokens", () => {
 // ─────────────────────────────────────────────────────────────────────────
 describe("logger", () => {
   test("info calls console.info when NODE_ENV is development", () => {
-    const spy = spyOn(console, "info").mockImplementation(() => {});
+    const spy = spyOn(console, "info").mockImplementation(() => undefined);
     logger.info("test info");
     expect(spy).toHaveBeenCalledWith("test info");
     spy.mockRestore();
   });
 
   test("error always calls console.error", () => {
-    const spy = spyOn(console, "error").mockImplementation(() => {});
+    const spy = spyOn(console, "error").mockImplementation(() => undefined);
     logger.error("test error");
     expect(spy).toHaveBeenCalledWith("test error");
     spy.mockRestore();
   });
 
   test("warn always calls console.warn", () => {
-    const spy = spyOn(console, "warn").mockImplementation(() => {});
+    const spy = spyOn(console, "warn").mockImplementation(() => undefined);
     logger.warn("test warn");
     expect(spy).toHaveBeenCalledWith("test warn");
     spy.mockRestore();
   });
 
   test("log calls console.log when NODE_ENV is development", () => {
-    const spy = spyOn(console, "log").mockImplementation(() => {});
+    const spy = spyOn(console, "log").mockImplementation(() => undefined);
     logger.log("test log");
     expect(spy).toHaveBeenCalledWith("test log");
     spy.mockRestore();
   });
 
   test("does not throw with multiple arguments", () => {
-    const spy = spyOn(console, "error").mockImplementation(() => {});
+    const spy = spyOn(console, "error").mockImplementation(() => undefined);
     expect(() => logger.info("a", "b", 123)).not.toThrow();
     expect(() => logger.error("err", new Error("e"))).not.toThrow();
     expect(() => logger.warn("warn")).not.toThrow();
@@ -806,11 +812,11 @@ describe("notification.utils", () => {
   };
 
   function testLogsContent(fn: () => void, ...contentChecks: string[]) {
-    const spy = spyOn(console, "log").mockImplementation(() => {});
+    const spy = spyOn(console, "log").mockImplementation(() => undefined);
     fn();
     expect(spy).toHaveBeenCalled();
     for (const content of contentChecks) {
-      const found = spy.mock.calls.some((args: any[]) =>
+      const found = spy.mock.calls.some((args: unknown[]) =>
         args.some((a: string) => typeof a === "string" && a.includes(content))
       );
       expect(found).toBe(true);
@@ -897,7 +903,7 @@ describe("notification.utils", () => {
 // 13. user.helpers (createUserAndWallet)
 // ─────────────────────────────────────────────────────────────────────────
 describe("createUserAndWallet", () => {
-  const mockSession = { id: "session-1" } as any;
+  const mockSession = { id: "session-1" } as unknown;
 
   beforeEach(() => {
     mockUserCreate.mockReset();
@@ -934,7 +940,7 @@ describe("createUserAndWallet", () => {
   });
 
   test("gives initial balance 50 for USER role", async () => {
-    const createdUser = { _id: "u1", wallet: undefined, save: mock(() => {}) };
+    const createdUser = { _id: "u1", wallet: undefined, save: mock(() => undefined) };
     mockUserCreate.mockImplementation(() => Promise.resolve([createdUser]));
     mockWalletCreate.mockImplementation(() => Promise.resolve([{ _id: "w1" }]));
 
@@ -944,7 +950,7 @@ describe("createUserAndWallet", () => {
   });
 
   test("gives initial balance 50 for AGENT role", async () => {
-    const createdUser = { _id: "u2", wallet: undefined, save: mock(() => {}) };
+    const createdUser = { _id: "u2", wallet: undefined, save: mock(() => undefined) };
     mockUserCreate.mockImplementation(() => Promise.resolve([createdUser]));
     mockWalletCreate.mockImplementation(() => Promise.resolve([{ _id: "w1" }]));
 
@@ -954,7 +960,7 @@ describe("createUserAndWallet", () => {
   });
 
   test("gives initial balance 0 for ADMIN role", async () => {
-    const createdUser = { _id: "u3", wallet: undefined, save: mock(() => {}) };
+    const createdUser = { _id: "u3", wallet: undefined, save: mock(() => undefined) };
     mockUserCreate.mockImplementation(() => Promise.resolve([createdUser]));
     mockWalletCreate.mockImplementation(() => Promise.resolve([{ _id: "w1" }]));
 
@@ -964,7 +970,7 @@ describe("createUserAndWallet", () => {
   });
 
   test("gives initial balance 0 for SUPER_ADMIN role", async () => {
-    const createdUser = { _id: "u4", wallet: undefined, save: mock(() => {}) };
+    const createdUser = { _id: "u4", wallet: undefined, save: mock(() => undefined) };
     mockUserCreate.mockImplementation(() => Promise.resolve([createdUser]));
     mockWalletCreate.mockImplementation(() => Promise.resolve([{ _id: "w1" }]));
 
@@ -985,7 +991,7 @@ describe("createUserAndWallet", () => {
   });
 
   test("throws AppError when wallet creation returns empty array", async () => {
-    const createdUser = { _id: "u1", wallet: undefined, save: mock(() => {}) };
+    const createdUser = { _id: "u1", wallet: undefined, save: mock(() => undefined) };
     mockUserCreate.mockImplementation(() => Promise.resolve([createdUser]));
     mockWalletCreate.mockImplementation(() => Promise.resolve([]));
 
@@ -1020,7 +1026,7 @@ describe("auth.utils", () => {
 
   describe("sendMockEmail", () => {
     test("logs email details", () => {
-      const spy = spyOn(console, "log").mockImplementation(() => {});
+      const spy = spyOn(console, "log").mockImplementation(() => undefined);
       authUtils.sendMockEmail("user@test.com", "Welcome", "Hello!");
 
       expect(spy).toHaveBeenCalled();

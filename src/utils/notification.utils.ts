@@ -104,3 +104,13 @@ export const notifyPasswordReset = (data: NotificationData) => {
         `Dear ${data.name}, your password has been successfully reset.`,
     );
 };
+
+export default {
+    notifyRegistration,
+    notifyTransaction,
+    notifyWalletBlocked,
+    notifyWalletUnblocked,
+    notifyAgentApproved,
+    notifyAgentSuspended,
+    notifyPasswordReset,
+};

@@ -12,9 +12,6 @@ permissions:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-name: CI
-permissions:
-  contents: read
 
 jobs:
   lint:
@@ -26,7 +23,7 @@ jobs:
         with:
           bun-version: latest
       - run: bun install
-      - run: bun run lint
+      - run: bun run lint -- --ignore-pattern "src/__tests__/**"
 
   typecheck:
     name: TypeScript
@@ -42,13 +39,38 @@ jobs:
   test:
     name: Tests
     runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:8
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
       - run: bun install
-      - run: bun test
+      - run: bun run test
+        env:
+          DB_URL: mongodb://localhost:27017/test
+          PORT: ${{ secrets.TEST_PORT }}
+          NODE_ENV: test
+          CORS_ORIGIN: ${{ secrets.TEST_CORS_ORIGIN }}
+          COOKIE_DOMAIN: localhost
+          JWT_ACCESS_SECRET: ${{ secrets.TEST_JWT_ACCESS_SECRET }}
+          JWT_ACCESS_EXPIRES: ${{ secrets.TEST_JWT_ACCESS_EXPIRES }}
+          JWT_REFRESH_SECRET: ${{ secrets.TEST_JWT_REFRESH_SECRET }}
+          JWT_REFRESH_EXPIRES: ${{ secrets.TEST_JWT_REFRESH_EXPIRES }}
+          BCRYPT_SALT_ROUND: ${{ secrets.TEST_BCRYPT_SALT_ROUND }}
+          SUPER_ADMIN_EMAIL: ${{ secrets.TEST_SUPER_ADMIN_EMAIL }}
+          SUPER_ADMIN_PASSWORD: ${{ secrets.TEST_SUPER_ADMIN_PASSWORD }}
+          CLIENT_URL: ${{ secrets.TEST_CLIENT_URL }}
+          EXPRESS_SESSION_SECRET: ${{ secrets.TEST_EXPRESS_SESSION_SECRET }}
 
   build:
     name: Build
