@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "bun run build:vercel",
+  "buildCommand": "bun run build",
   "outputDirectory": "dist",
   "devCommand": "bun run dev",
   "installCommand": "bun install",
@@ -8,7 +8,7 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "dist/api.js"
+      "dest": "dist/server.js"
     }
   ]
 }
