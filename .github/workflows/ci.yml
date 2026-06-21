@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.2.23"
+          bun-version: latest
       - run: bun install
       - run: bun run lint -- --ignore-pattern "src/__tests__/**"
 
@@ -32,7 +32,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.2.23"
+          bun-version: latest
       - run: bun install
       - run: bun tsc --noEmit
 
@@ -53,7 +53,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.2.23"
+          bun-version: latest
       - run: bun install
       - run: bun test
         env:
@@ -80,7 +80,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.2.23"
+          bun-version: latest
       - run: bun install
       - run: bun run build
       - uses: actions/upload-artifact@v4
@@ -97,7 +97,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.2.23"
+          bun-version: latest
       - run: bun install --production
 
       - name: Configure SSH
