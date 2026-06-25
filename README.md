@@ -1,259 +1,173 @@
-# Wallet Management API
+# Wallet Management System — API
 
-[![CI](https://github.com/tarekul42/wallet-management-api/actions/workflows/ci.yml/badge.svg)](https://github.com/tarekul42/wallet-management-api/actions/workflows/ci.yml)
-![Bun](https://img.shields.io/badge/Bun-1.x-black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue)
-![License](https://img.shields.io/badge/License-ISC-yellow)
+> A robust, production-ready REST API for a digital wallet platform. Built with **Bun**, **Express 5**, **MongoDB**, and **TypeScript**. Features MongoDB ACID transactions for financial operations, granular RBAC (USER / AGENT / ADMIN / SUPER_ADMIN), JWT access/refresh token rotation, and a deliberate decision to remove OAuth for financial-app security.
 
-A robust, production-ready REST API for managing digital wallets, user authentication, financial transactions, and service purchases. Built with Express, MongoDB, and Bun.
+[![Frontend Repo](https://img.shields.io/badge/Frontend_Repo-GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/tarekul42/wallet-management-client)
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg?style=flat-square)](https://opensource.org/licenses/ISC)
 
 ---
 
-## Features
+## 📋 Overview
 
-| Feature | Description |
-|---------|-------------|
-| **Authentication** | JWT-based auth with access/refresh tokens, email verification, password reset, refresh token rotation |
-| **Authorization** | Role-based access control (USER, AGENT, ADMIN, SUPER_ADMIN) |
-| **Wallet Management** | Create wallets, balance tracking, block/unblock operations, agent cash-in/cash-out |
-| **Transactions** | Send money, cash-in, cash-out, withdrawals, transaction history, agent commission tracking with MongoDB transactions |
-| **Service Purchases** | Purchase services from the marketplace with 1.5% transaction fee, purchase history with populated service details |
-| **Service Management** | Full CRUD for services, categories, search, filtering, rating sorting, pagination, related services |
-| **Agent Management** | Agent dashboard with balance, total commission, active customers count, success rate, commission history |
-| **User Management** | Profile management, admin creation, agent approval/suspension, block/unblock users |
-| **System Configuration** | Configurable fees (send, cash-in, withdraw, cash-out), agent commission rate, daily/monthly limits |
-| **Security** | Rate limiting, Helmet, bcrypt hashing, httpOnly cookies, NoSQL injection protection |
-| **Validation** | Request validation with Zod |
-| **Error Handling** | Centralized error handling with meaningful HTTP status codes |
+This is the backend API for the **Wallet Management System** — a digital wallet platform handling user authentication, wallet management, financial transactions (send money, cash-in, cash-out, withdrawals), a service marketplace with 1.5% transaction fees, agent commission tracking, and virtual/physical card management.
+
+The API is built on **Bun + Express 5** with **MongoDB (Mongoose)** and follows a modular architecture across 12 modules: `auth`, `user`, `wallet`, `transaction`, `service`, `card`, `agent`, `admin`, `dashboard`, `public`, `systemConfig`, `system-settings`. Financial operations use **MongoDB ACID transactions** to ensure atomicity across multi-document updates (e.g., a send-money operation debits the sender, credits the receiver, and logs the transaction — all atomically).
+
+**Why no OAuth?** This is a financial app handling real money. OAuth introduces dependency on external providers (outages = locked-out users), complicates account recovery (which provider owns this account?), expands the attack surface (token leaks, callback hijacking), and creates a fuzzier threat model. For wallets, the simpler password + JWT rotation + email verification flow is the safer choice.
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 | Category | Technology |
-|----------|------------|
+|----------|-----------|
 | Runtime | Bun |
-| Framework | Express |
-| Language | TypeScript |
-| Database | MongoDB (Mongoose) |
-| Authentication | JWT, Passport.js (Local Strategy) |
-| Validation | Zod |
-| Security | Helmet, express-rate-limit, bcryptjs |
+| Framework | Express.js 5 |
+| Language | TypeScript 5.9 |
+| Database | MongoDB (Mongoose 8) |
+| Auth | JWT + Passport.js (Local Strategy only — OAuth deliberately removed) |
+| Validation | Zod 4 |
+| Security | Helmet, express-rate-limit, bcryptjs, cookie-parser, express-session |
+| Password Hashing | bcryptjs (salt rounds configurable) |
+| HTTP Status | http-status-codes |
+| CI/CD | GitHub Actions |
 
 ---
 
-## Prerequisites
+## ✨ Main Features
 
-- **Bun** 1.x or later
-- **MongoDB** (local instance or [MongoDB Atlas](https://www.mongodb.com/cloud/atlas))
+- **MongoDB ACID transactions** — financial operations (send money, cash-in, cash-out, withdrawals) are atomic across multi-document updates. If any step fails, the entire transaction rolls back. No partial debits, no lost credits.
+- **Granular RBAC** — USER / AGENT / ADMIN / SUPER_ADMIN with distinct permissions. Agents can cash-in/cash-out and earn commissions; admins manage users, agents, and system config; super admins configure fees and limits.
+- **JWT access + refresh token rotation** — every refresh issues a new refresh token and invalidates the old one. Reduces the impact of token theft (a stolen refresh token is only valid until the next legitimate refresh).
+- **Deliberately no OAuth** — for a financial app, password + JWT rotation + email verification is safer than OAuth. Less external-provider dependency, simpler account recovery, smaller attack surface. Documented engineering decision, not an oversight.
+- **Configurable system economics** — fees (send, cash-in, withdraw, cash-out), agent commission rate, and daily/monthly limits are all configurable at runtime via admin endpoints. No code changes needed to tune the business model.
+- **Service marketplace with 1.5% fee** — purchase services from the marketplace; the fee auto-routes to the system wallet. Purchase history with populated service details.
+- **Agent commission tracking** — accurate commission calculation across cash-in/out operations using transactional increments (no double-counting, no lost updates).
+- **Virtual & physical card management** — create, copy details, freeze/unfreeze cards.
+- **Seeded demo data** — 4 demo accounts (User with $7,177.50 balance, Agent with $9,630, Admin, Super Admin) so reviewers can explore immediately.
+- **Rate limiting** — Helmet + express-rate-limit protect against brute-force and API abuse.
+- **Zod validation** — every request body is validated before reaching controllers.
 
 ---
 
-## Getting Started
+## 📦 Main Dependencies
 
-### 1. Clone & Install
+### Runtime Dependencies
+| Package | Purpose |
+|---------|---------|
+| `express@^5.2.1` | Web framework |
+| `mongoose@^8.24.0` | MongoDB ODM (with ACID transactions) |
+| `jsonwebtoken@^9.0.3` | JWT auth (access + refresh rotation) |
+| `passport@^0.7.0` + `passport-local@^1.0.0` | Authentication (Local Strategy only) |
+| `bcryptjs@^3.0.3` | Password hashing |
+| `zod@^4.4.3` | Schema validation |
+| `helmet@^8.2.0` | Security headers |
+| `express-rate-limit@^8.5.2` | Rate limiting |
+| `cookie-parser@^1.4.7` | Cookie parsing |
+| `express-session@^1.19.0` | Session management |
+| `cors@^2.8.6` | Cross-origin resource sharing |
+| `dotenv@^17.4.2` | Environment variable loading |
+| `http-status-codes@^2.3.0` | HTTP status constants |
+
+### Dev Dependencies (key ones)
+| Package | Purpose |
+|---------|---------|
+| `typescript@^5.9.3` | Type safety |
+| `eslint@^9.39.4` + `typescript-eslint@^8.61.1` | Linting |
+| `supertest@^7.2.2` | HTTP assertion testing |
+| `bun-types@^1.3.14` | Bun type definitions |
+| `@vercel/node@^5.1.14` | Vercel serverless deployment |
+
+---
+
+## 🚀 Run Locally
+
+### Prerequisites
+- [Bun](https://bun.sh/) 1.x+
+- [MongoDB](https://www.mongodb.com/try/download/community) running locally, or a [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) cluster (free tier works)
+
+### Installation
 
 ```bash
-git clone https://github.com/tarekul42/wallet-management-api
+# 1. Clone
+git clone https://github.com/tarekul42/wallet-management-api.git
 cd wallet-management-api
+
+# 2. Install dependencies
 bun install
-```
 
-### 2. Environment Setup
-
-```bash
+# 3. Configure environment
 cp .env.example .env
+# Edit .env — see required variables below
+
+# 4. Seed the database (creates super admin + 4 demo users)
+bun run seed
+
+# 5. Run dev server (with hot reload)
+bun run dev
 ```
 
-Edit `.env` and configure the required variables:
+Server starts at http://localhost:5000
+
+### Environment Variables (required)
 
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `PORT` | Server port | `5000` |
-| `DB_URL` | MongoDB connection string | `mongodb+srv://user:pass@cluster.mongodb.net/` |
-| `NODE_ENV` | Environment | `development` or `production` |
-| `JWT_ACCESS_SECRET` | Access token signing secret | *Generate below* |
-| `JWT_REFRESH_SECRET` | Refresh token signing secret | *Generate below* |
-| `JWT_ACCESS_EXPIRES` | Access token lifetime | `15m` |
-| `JWT_REFRESH_EXPIRES` | Refresh token lifetime | `30d` |
+| `NODE_ENV` | Environment | `development` |
+| `DB_URL` | MongoDB connection string | `mongodb://localhost:27017/wallet` or Atlas URI |
 | `BCRYPT_SALT_ROUND` | Bcrypt salt rounds | `10` |
+| `JWT_ACCESS_SECRET` | Access token secret | `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` |
+| `JWT_ACCESS_EXPIRES` | Access token lifetime | `15m` |
+| `JWT_REFRESH_SECRET` | Refresh token secret | (generate like above) |
+| `JWT_REFRESH_EXPIRES` | Refresh token lifetime | `7d` |
+| `CORS_ORIGIN` | Allowed origins (comma-separated) | `http://localhost:5173` |
+| `CLIENT_URL` | Frontend URL | `http://localhost:5173` |
+| `COOKIE_DOMAIN` | Cookie domain | `localhost` |
 | `SUPER_ADMIN_EMAIL` | Super admin email | `admin@example.com` |
-| `SUPER_ADMIN_PASSWORD` | Super admin password | *Strong password* |
-| `DEMO_USER_EMAIL` | Demo user email for portfolio review | `demo.user@example.com` |
+| `SUPER_ADMIN_PASSWORD` | Super admin password | `super-secret-password` |
+| `EXPRESS_SESSION_SECRET` | Session secret | (generate like above) |
+| `DEMO_USER_EMAIL` | Demo user email | `demo.user@example.com` |
 | `DEMO_USER_PASSWORD` | Demo user password | `DemoUser123!` |
 | `DEMO_AGENT_EMAIL` | Demo agent email | `demo.agent@example.com` |
 | `DEMO_AGENT_PASSWORD` | Demo agent password | `DemoAgent123!` |
 | `DEMO_ADMIN_EMAIL` | Demo admin email | `demo.admin@example.com` |
 | `DEMO_ADMIN_PASSWORD` | Demo admin password | `DemoAdmin123!` |
-| `CORS_ORIGIN` | Allowed CORS origins | `http://localhost:5173,http://localhost:3000` |
-| `CLIENT_URL` | Frontend URL for redirects | `http://localhost:5173` |
 
-### 3. Seed Demo Data
-
-```bash
-# Full seed (users, wallets, transactions, services, cards)
-bun run seed
-
-# Agent-specific seed (rich agent transaction history)
-bun run scripts/seed-agent.ts
-```
-
-### 4. Run the Application
-
-```bash
-# Development (hot reload)
-bun run dev
-
-# Production
-bun run build
-bun start
-```
-
-The API is available at `http://localhost:5000` (or your configured `PORT`).
-
----
-
-## API Documentation
-
-All endpoints are prefixed with **`/api/v1`**.
-
-| Module | Base Path | Description |
-|--------|-----------|-------------|
-| Auth | `/auth` | Register, login, logout, refresh token, verify email, forgot/reset password |
-| Users | `/users` | Profile, admin creation, block/unblock, agent approval |
-| Wallets | `/wallets` | Wallet management, balance, block/unblock |
-| Transactions | `/transactions` | Send money, cash-in, cash-out, withdraw, history, commission history |
-| Services | `/services` | List, search, filter, categories, service details, related services, **purchase**, **my purchases** |
-| Agent | `/agent` | Agent dashboard summary (balance, commission, customers, success rate) |
-| Admin | `/admin` | Dashboard summary, manage users, agents, wallets, system config |
-| Cards | `/cards` | Virtual/physical card management |
-| System Config | `/system-config` | System-wide configuration (fees, limits, commission rate) |
-| System Settings | `/system-settings` | Transaction fee percentage |
-
-### Authentication
-
-JWT access tokens are returned in the login response and should be sent as `Authorization: Bearer <token>`. Refresh tokens are stored in httpOnly cookies. The API also supports token refresh via `POST /auth/refresh-token`.
-
-### Service Purchase Flow
-
-```
-POST /api/v1/services/:id/purchase
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{ "amount": 29.99 }
-```
-
-- Deducts `amount + fee` (1.5% of amount) from user's wallet
-- Credits the fee to the system wallet
-- Returns `{ balance: number }` for instant UI update
-- Requires `USER` role
-
-### Purchase History
-
-```
-GET /api/v1/services/my-purchases
-Authorization: Bearer <token>
-```
-
-Returns SERVICE_PURCHASE transactions with populated service details (title, image, price, category).
-
-For detailed request/response schemas, see **[API_DOCS.md](./API_DOCS.md)**.
-
----
-
-## Project Structure
-
-```
-src/
-├── app.ts                 # Express app configuration
-├── server.ts              # Server entry point
-├── config/                # Environment, Passport, rate limiter
-├── errorHelpers/          # Error transformation utilities
-├── helpers/               # Validation & error handlers
-├── interfaces/            # TypeScript type definitions
-├── middlewares/           # Auth, validation, global error handler
-├── modules/               # Feature modules
-│   ├── auth/              # Login, register, OAuth, password reset
-│   ├── user/              # Profile, admin/agent management
-│   ├── wallet/            # Balance, status, CRUD
-│   ├── transaction/       # Send money, cash-in/out, withdraw, history
-│   ├── service/           # Services CRUD, purchase, purchase history
-│   ├── agent/             # Agent dashboard summary
-│   ├── admin/             # Admin dashboard, user/agent/wallet management
-│   ├── card/              # Virtual and physical card management
-│   ├── dashboard/         # Aggregated dashboard data
-│   ├── public/            # Public endpoints
-│   ├── systemConfig/      # Dynamic system configuration
-│   └── system-settings/   # System settings
-├── routes/                # Route aggregation
-└── utils/                 # Shared utilities (JWT, catchAsync, sendResponse)
-scripts/
-├── seed.ts                # Main seed (all users, wallets, transactions, services, cards)
-├── seed-agent.ts          # Agent-specific seed data
-└── seed-services.ts       # Standalone services seed
-```
-
----
-
-## Scripts
+### Available Scripts
 
 | Command | Description |
 |---------|-------------|
-| `bun run dev` | Start development server with hot reload |
-| `bun run build` | Compile TypeScript to JavaScript |
-| `bun start` | Run production server |
+| `bun run dev` | Start dev server with hot reload |
+| `bun run build` | Build for production (`bun build`) |
+| `bun run start` | Start production server from `dist/` |
+| `bun run seed` | Seed database with super admin + demo users |
+| `bun run test` | Run tests with Bun test runner |
 | `bun run lint` | Run ESLint |
 | `bun run lint:fix` | Run ESLint with auto-fix |
-| `bun test` | Run tests |
-| `bun run seed` | Seed demo data (users, wallets, transactions, services, cards) |
 
 ---
 
-## Demo Credentials
+## 🔗 Links
 
-After running the seed script, the following demo accounts are available:
-
-| Role | Email | Password | Wallet |
-|------|-------|----------|--------|
-| **User** | `demo.user@example.com` | `DemoUser123!` | $7,177.50 |
-| **Agent** | `demo.agent@example.com` | `DemoAgent123!` | $9,630.00 |
-| **Admin** | `demo.admin@example.com` | `DemoAdmin123!` | $0.00 |
-| **Super Admin** | `admin.wallet@gmail.com` | `SuperAdmin123` | $0.00 |
-
-Additional test users: Alice, Bob, Carol, Dave, Eva, FastCash Agent, PayPoint Agent.
+| Resource | URL |
+|----------|-----|
+| 🖥️ **Frontend Repo** | https://github.com/tarekul42/wallet-management-client |
+| 🌐 **Live Frontend** | https://wallet-management-client.vercel.app |
+| 📧 **Contact** | tarekulrifat142@gmail.com |
 
 ---
 
-## CI/CD
+## 📄 License
 
-GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push to `main` and on pull requests:
-
-- Install dependencies (`bun install`)
-- ESLint
-- Tests (`bun test`)
-- Production build (`bun run build`)
+ISC © Tarekul Islam Rifat
 
 ---
 
----
+<div align="center">
 
-## Security Notes
+**⭐ If this project helped you, give it a star!**
 
-### Why Third-Party Login (Google / Facebook OAuth) Was Removed
+Built with ❤️ by [Tarekul Islam Rifat](https://github.com/tarekul42)
 
-This application previously supported Google and Facebook OAuth for social login. These were removed to maintain the highest level of security and control over authentication in a financial application:
-
-1. **Dependency on external identity providers** — OAuth relies on third-party services whose availability, security posture, and data-handling policies are outside our control. A compromise at the provider level could affect user accounts.
-
-2. **Account recovery complexity** — For a wallet app handling real or simulated funds, having multiple auth paths (email/password + social logins) creates ambiguity in account recovery and password reset flows. Users who signed up via OAuth may not have a password, complicating support scenarios.
-
-3. **Attack surface reduction** — Removing OAuth eliminates the need for `passport-google-oauth20`, `passport-facebook`, and their associated session/callback handling. This reduces the dependency footprint, the number of HTTP endpoints exposed, and the potential for SSRF or redirect-based attacks.
-
-4. **Simpler threat model** — With only email/password + JWT-based auth, the security model is straightforward: rate-limited login, bcrypt-hashed passwords, httpOnly refresh tokens, and sessionStorage access tokens. No additional OAuth token management or state parameter handling is required.
-
-Authentication is now limited to email/password credentials with JWT access/refresh token rotation, providing a fully self-contained auth system.
-
-## License
-
-ISC
+</div>
