@@ -13,6 +13,7 @@ import { Role } from "../user/user.interface.js";
 import { SystemConfigServices } from "../systemConfig/systemConfig.service.js";
 import { SystemSettings } from "../system-settings/system-settings.model.js";
 import { Service } from "./service.model.js";
+import { withTransaction } from "../../utils/withTransaction.js";
 
 const isPlainString = (value: unknown): value is string => {
   return typeof value === "string";
@@ -111,11 +112,7 @@ const purchase = async (userId: string, serviceId: string, amount: number) => {
     );
   }
 
-  const session = await mongoose.startSession();
-
-  try {
-    session.startTransaction();
-
+  return withTransaction(async (session) => {
     const user = await User.findById(userId)
       .populate<{ wallet: IWallet }>("wallet")
       .session(session);
@@ -133,14 +130,12 @@ const purchase = async (userId: string, serviceId: string, amount: number) => {
       throw new AppError(StatusCodes.FORBIDDEN, "Your wallet is not active");
     }
 
-    // Get system fee and system wallet
     const config = await SystemConfigServices.getSystemConfig();
     const settings = await SystemSettings.findOne();
     const feeRate = settings?.transactionFee ?? 0.015;
     const fee = parseFloat((amount * feeRate).toFixed(2));
     const totalDeduction = amount + fee;
 
-    // Atomically deduct amount + fee from user's wallet
     const walletUpdate = await Wallet.findOneAndUpdate(
       {
         _id: { $eq: String(user.wallet._id) },
@@ -154,7 +149,6 @@ const purchase = async (userId: string, serviceId: string, amount: number) => {
       throw new AppError(StatusCodes.BAD_REQUEST, "Insufficient funds.");
     }
 
-    // Send fee to system wallet
     if (fee > 0 && config.systemWalletId) {
       await Wallet.findOneAndUpdate(
         { _id: { $eq: String(config.systemWalletId) } },
@@ -181,25 +175,12 @@ const purchase = async (userId: string, serviceId: string, amount: number) => {
       { session },
     );
 
-    await session.commitTransaction();
-
     const updatedWallet = await Wallet.findById(user.wallet._id);
     return {
       message: `Successfully purchased ${service.title}`,
       balance: updatedWallet?.balance ?? 0,
     };
-  } catch (error) {
-    await session.abortTransaction();
-    if (error instanceof AppError) {
-      throw error;
-    }
-    throw new AppError(
-      StatusCodes.INTERNAL_SERVER_ERROR,
-      "Purchase failed. Please try again.",
-    );
-  } finally {
-    session.endSession();
-  }
+  }, "Purchase");
 };
 
 const getMyPurchases = async (userId: string) => {

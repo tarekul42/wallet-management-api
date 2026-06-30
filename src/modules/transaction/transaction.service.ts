@@ -13,6 +13,7 @@ import {
 import { Role } from "../user/user.interface.js";
 import { SystemConfigServices } from "../systemConfig/systemConfig.service.js";
 import type { ISystemConfig } from "../systemConfig/systemConfig.interface.js";
+import { withTransaction } from "../../utils/withTransaction.js";
 
 const MAX_PAGINATION_LIMIT = 100;
 
@@ -139,16 +140,11 @@ const sendMoney = async (
     );
   }
 
-  const session = await mongoose.startSession();
-
-  try {
-    session.startTransaction();
-
+  return withTransaction(async (session) => {
     const sender = await User.findById(senderId)
       .populate<{ wallet: IWallet }>("wallet")
       .session(session);
 
-    // Ensure receiverEmail is a string to prevent NoSQL injection
     const receiver = await User.findOne({ email: { $eq: String(receiverEmail) } })
       .populate<{ wallet: IWallet }>("wallet")
       .session(session);
@@ -181,15 +177,12 @@ const sendMoney = async (
       );
     }
 
-    // Check transaction limits
     const config = await SystemConfigServices.getSystemConfig();
     await checkAndUpdateTransactionLimits(senderId, amount, config, session);
 
-    // Get dynamic fee from SystemConfig
     const fee = amount > 100 ? config.sendMoneyFee : 0;
     const totalDeduction = amount + fee;
 
-    // Atomically check balance and decrement
     const senderWalletUpdate = await Wallet.findOneAndUpdate(
       {
         _id: { $eq: String(sender.wallet._id) },
@@ -203,14 +196,12 @@ const sendMoney = async (
       throw new AppError(StatusCodes.BAD_REQUEST, "Insufficient funds.");
     }
 
-    // Increment receiver's balance
     await Wallet.findOneAndUpdate(
       { _id: { $eq: String(receiver.wallet._id) } },
       { $inc: { balance: amount } },
       { session },
     );
 
-    // Add fee to system wallet
     if (fee > 0) {
       await Wallet.findOneAndUpdate(
         { _id: { $eq: String(config.systemWalletId) } },
@@ -219,7 +210,6 @@ const sendMoney = async (
       );
     }
 
-    // Create transaction record
     await Transaction.create(
       [
         {
@@ -237,22 +227,9 @@ const sendMoney = async (
       { session },
     );
 
-    await session.commitTransaction();
-
     const updatedWallet = await Wallet.findById(sender.wallet._id);
     return { message: "Money sent successfully", balance: updatedWallet?.balance ?? 0 };
-  } catch (error) {
-    await session.abortTransaction();
-    if (error instanceof AppError) {
-      throw error;
-    }
-    throw new AppError(
-      StatusCodes.INTERNAL_SERVER_ERROR,
-      "Transaction failed. Please try again later.",
-    );
-  } finally {
-    session.endSession();
-  }
+  }, "Transaction");
 };
 
 const addMoney = async (
@@ -264,11 +241,7 @@ const addMoney = async (
     throw new AppError(StatusCodes.BAD_REQUEST, "Amount must be positive.");
   }
 
-  const session = await mongoose.startSession();
-
-  try {
-    session.startTransaction();
-
+  return withTransaction(async (session) => {
     const actor = await User.findById(actorId)
       .populate<{ wallet: IWallet }>("wallet")
       .session(session);
@@ -289,7 +262,6 @@ const addMoney = async (
           "Receiver ID is required for agents",
         );
       }
-      // Ensure receiverId is a safe literal value before using it in queries
       if (typeof receiverId !== "string") {
         throw new AppError(
           StatusCodes.BAD_REQUEST,
@@ -326,7 +298,7 @@ const addMoney = async (
 
     const config = await SystemConfigServices.getSystemConfig();
     const fee = amount * (config.cashInFee / 100);
-    const totalDeduction = actor.role === Role.AGENT ? amount : 0; // Agents pay the amount they cash-in
+    const totalDeduction = actor.role === Role.AGENT ? amount : 0;
 
     if (actor.role === Role.AGENT) {
       const agentWalletUpdate = await Wallet.findOneAndUpdate(
@@ -380,26 +352,13 @@ const addMoney = async (
       );
     }
 
-    await session.commitTransaction();
-
     const updatedWallet = await Wallet.findById(receiverWallet._id);
 
     return {
       message: "Money added successfully",
       balance: updatedWallet?.balance ?? 0,
     };
-  } catch (error) {
-    await session.abortTransaction();
-    if (error instanceof AppError) {
-      throw error;
-    }
-    throw new AppError(
-      StatusCodes.INTERNAL_SERVER_ERROR,
-      "Transaction failed. Please try again later.",
-    );
-  } finally {
-    session.endSession();
-  }
+  }, "Transaction");
 };
 
 const withdrawMoney = async (
@@ -411,11 +370,7 @@ const withdrawMoney = async (
     throw new AppError(StatusCodes.BAD_REQUEST, "Amount must be positive.");
   }
 
-  const session = await mongoose.startSession();
-
-  try {
-    session.startTransaction();
-
+  return withTransaction(async (session) => {
     const actor = await User.findById(actorId)
       .populate<{ wallet: IWallet }>("wallet")
       .session(session);
@@ -479,7 +434,6 @@ const withdrawMoney = async (
     const fee = amount * (feeRate / 100);
     const totalDeduction = amount + fee;
 
-    // Atomically check balance and decrement
     const fromWalletUpdate = await Wallet.findOneAndUpdate(
       {
         _id: { $eq: String(fromWallet._id) },
@@ -493,7 +447,6 @@ const withdrawMoney = async (
       throw new AppError(StatusCodes.BAD_REQUEST, "Insufficient funds.");
     }
 
-    // If it's a cash-out, add amount to agent wallet
     if (transactionType === TransactionType.CASH_OUT) {
       await Wallet.findOneAndUpdate(
         { _id: { $eq: String(actor.wallet?._id) } },
@@ -502,7 +455,6 @@ const withdrawMoney = async (
       );
     }
 
-    // Add fee to system wallet
     if (fee > 0) {
       await Wallet.findOneAndUpdate(
         { _id: { $eq: String(config.systemWalletId) } },
@@ -542,22 +494,9 @@ const withdrawMoney = async (
       );
     }
 
-    await session.commitTransaction();
-
     const updatedWallet = await Wallet.findById(fromWallet._id);
     return { message: "Money withdrawn successfully", balance: updatedWallet?.balance ?? 0 };
-  } catch (error) {
-    await session.abortTransaction();
-    if (error instanceof AppError) {
-      throw error;
-    }
-    throw new AppError(
-      StatusCodes.INTERNAL_SERVER_ERROR,
-      "Transaction failed. Please try again later.",
-    );
-  } finally {
-    session.endSession();
-  }
+  }, "Transaction");
 };
 
 const viewHistory = async (actorId: string, query: Record<string, unknown>) => {

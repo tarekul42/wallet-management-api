@@ -8,6 +8,7 @@ import { WalletStatus } from "../wallet/wallet.interface.js";
 import { createUserAndWallet } from "./user.helpers.js";
 import bcrypt from "bcryptjs";
 import { notifyAgentApproved, notifyAgentSuspended } from "../../utils/notification.utils.js";
+import { withTransaction } from "../../utils/withTransaction.js";
 
 // Service to get a user's own profile
 const getMyProfile = async (userId: string) => {
@@ -117,14 +118,9 @@ const updateUserStatus = async (
     }
   }
 
-  const session = await mongoose.startSession();
-  let updatedUser;
-
-  try {
-    session.startTransaction();
-
+  return withTransaction(async (session) => {
     targetUser.isActive = newStatus;
-    updatedUser = await targetUser.save({ session });
+    const updatedUser = await targetUser.save({ session });
 
     if (targetUser.wallet) {
       const walletStatus =
@@ -139,19 +135,8 @@ const updateUserStatus = async (
       );
     }
 
-    await session.commitTransaction();
-  } catch (error) {
-    await session.abortTransaction();
-    let errorMessage = `Failed to ${newStatus.toLowerCase()} user and wallet.`;
-    if (error instanceof Error) {
-      errorMessage = `${errorMessage} Error: ${error.message}`;
-    }
-    throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, errorMessage);
-  } finally {
-    session.endSession();
-  }
-
-  return updatedUser;
+    return updatedUser;
+  }, `Failed to ${newStatus.toLowerCase()} user and wallet`);
 };
 
 const blockUser = async (currentUserId: string, targetUserId: string) => {
@@ -325,37 +310,17 @@ const createAdmin = async (payload: IUser) => {
     );
   }
 
-  const session = await mongoose.startSession();
-  let result;
+  const adminData: Partial<IUser> = {
+    name: payload.name,
+    email: normalizedEmail,
+    password: payload.password,
+    phone: payload.phone,
+    role: payload.role,
+  };
 
-  try {
-    session.startTransaction();
-
-    const adminData: Partial<IUser> = {
-      name: payload.name,
-      email: normalizedEmail,
-      password: payload.password,
-      phone: payload.phone,
-      role: payload.role,
-    };
-
-    const newUser = await createUserAndWallet(adminData, session);
-
-    await session.commitTransaction();
-
-    result = newUser;
-  } catch (error) {
-    await session.abortTransaction();
-    const errMsg = error instanceof Error ? error.message : String(error);
-    throw new AppError(
-      StatusCodes.INTERNAL_SERVER_ERROR,
-      `Failed to register user. Please try again later. ${errMsg}`,
-    );
-  } finally {
-    session.endSession();
-  }
-
-  return result;
+  return withTransaction(async (session) => {
+    return createUserAndWallet(adminData, session);
+  }, "Admin creation");
 };
 
 export const UserServices = {

@@ -1,5 +1,5 @@
 import { StatusCodes } from "http-status-codes";
-import mongoose, { Document } from "mongoose";
+import { Document } from "mongoose";
 import AppError from "../../errorHelpers/AppError.js";
 import { ApprovalStatus, IUser } from "../user/user.interface.js";
 import { User } from "../user/user.model.js";
@@ -9,6 +9,7 @@ import { envVars } from "../../config/env.js";
 import { verifyToken } from "../../utils/jwt.js";
 import { generateToken, sendMockEmail } from "./auth.utils.js";
 import { notifyRegistration } from "../../utils/notification.utils.js";
+import { withTransaction } from "../../utils/withTransaction.js";
 
 const getNewAccessToken = async (refreshToken: string) => {
   const newAccessToken = await createNewAccessToken(refreshToken);
@@ -56,48 +57,28 @@ const registerUser = async (payload: IUser) => {
     verificationToken: generateToken(),
   };
 
-  // Set default values for agents
   if (userData.role === "AGENT") {
     userData.approvalStatus = ApprovalStatus.PENDING;
-    userData.commissionRate = null; // Rate will be set upon approval
+    userData.commissionRate = null;
   }
 
-  const session = await mongoose.startSession();
-  let result;
+  const newUser = await withTransaction(async (session) => {
+    return createUserAndWallet(userData, session);
+  }, "Registration");
 
-  try {
-    session.startTransaction();
+  const result = { ...newUser.toObject() };
 
-    const newUser = await createUserAndWallet(userData, session);
+  sendMockEmail(
+    newUser.email,
+    "Verify Your Email",
+    `Your verification token is: ${userData.verificationToken}`,
+  );
 
-    await session.commitTransaction();
-
-    result = {
-      ...newUser.toObject(),
-    };
-
-    sendMockEmail(
-      newUser.email,
-      "Verify Your Email",
-      `Your verification token is: ${userData.verificationToken}`,
-    );
-
-    // Send registration notification
-    notifyRegistration({
-      userId: newUser._id.toString(),
-      email: newUser.email,
-      name: newUser.name,
-    });
-  } catch (error) {
-    await session.abortTransaction();
-    const errMsg = error instanceof Error ? error.message : String(error);
-    throw new AppError(
-      StatusCodes.INTERNAL_SERVER_ERROR,
-      `Failed to register user. Please try again later. ${errMsg}`
-    );
-  } finally {
-    session.endSession();
-  }
+  notifyRegistration({
+    userId: newUser._id.toString(),
+    email: newUser.email,
+    name: newUser.name,
+  });
 
   return result;
 };

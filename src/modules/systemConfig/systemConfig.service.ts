@@ -2,38 +2,46 @@
 import { ISystemConfig } from "./systemConfig.interface.js";
 import { SystemConfig } from "./systemConfig.model.js";
 
-/**
- * Get the current system configuration
- * If no config exists, create one with default values
- */
+let cachedConfig: ISystemConfig | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL_MS = 60_000; // 1 minute
+
 const getSystemConfig = async (): Promise<ISystemConfig> => {
+    const now = Date.now();
+    if (cachedConfig && (now - cacheTimestamp) < CACHE_TTL_MS) {
+        return cachedConfig;
+    }
+
     let config = await SystemConfig.findOne();
 
-    // If no config exists, create one with defaults
     if (!config) {
         config = await SystemConfig.create({});
     }
 
+    cachedConfig = config;
+    cacheTimestamp = now;
+
     return config;
 };
 
-/**
- * Update system configuration (Admin only)
- * @param payload - Partial system config to update
- */
+const invalidateCache = () => {
+    cachedConfig = null;
+    cacheTimestamp = 0;
+};
+
 const updateSystemConfig = async (
     payload: Partial<ISystemConfig>,
 ): Promise<ISystemConfig> => {
     let config = await SystemConfig.findOne();
 
     if (!config) {
-        // Create if doesn't exist
         config = await SystemConfig.create(payload);
     } else {
-        // Update existing
         Object.assign(config, payload);
         await config.save();
     }
+
+    invalidateCache();
 
     return config;
 };

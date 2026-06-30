@@ -1,7 +1,7 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { User } from "../modules/user/user.model.js";
-import { IsActive } from "../modules/user/user.interface.js";
+import { assertUserActive } from "../utils/checkUserStatus.js";
 import bcrypt from "bcryptjs";
 import { Types } from "mongoose";
 
@@ -32,19 +32,15 @@ passport.use(
         if (!user) {
           return done(null, false, { message: "User does not exists" });
         }
+
+        try {
+          assertUserActive(user);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "Account is not active";
+          return done(null, false, { message: msg });
+        }
         if (!user.isVerified) {
           return done(null, false, { message: "Please verify your email" });
-        }
-        if (
-          user.isActive === IsActive.BLOCKED ||
-          user.isActive === IsActive.INACTIVE
-        ) {
-          return done(null, false, {
-            message: `Your account is ${user.isActive}`,
-          });
-        }
-        if (user.isDeleted) {
-          return done(null, false, { message: "Your account is deleted" });
         }
         if (!user.password) {
           return done(null, false, {

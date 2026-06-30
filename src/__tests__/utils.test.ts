@@ -652,6 +652,7 @@ describe("userTokens", () => {
       role: "USER",
       isActive: "ACTIVE",
       isDeleted: false,
+      tokenVersion: 0,
     };
 
     beforeEach(() => {
@@ -719,7 +720,7 @@ describe("userTokens", () => {
       expect(createNewAccessToken("t")).rejects.toThrow(AppError);
       expect(createNewAccessToken("t")).rejects.toHaveProperty(
         "message",
-        "User is BLOCKED"
+        "This account has been blocked."
       );
     });
 
@@ -731,7 +732,7 @@ describe("userTokens", () => {
       expect(createNewAccessToken("t")).rejects.toThrow(AppError);
       expect(createNewAccessToken("t")).rejects.toHaveProperty(
         "message",
-        "User is INACTIVE"
+        "This account has been inactive."
       );
     });
 
@@ -743,18 +744,18 @@ describe("userTokens", () => {
       expect(createNewAccessToken("t")).rejects.toThrow(AppError);
       expect(createNewAccessToken("t")).rejects.toHaveProperty(
         "message",
-        "User is deleted"
+        "This account has been deleted."
       );
     });
 
-    test("generates token with userId, email, role (not tokenVersion)", async () => {
+    test("generates token with userId, email, role, tokenVersion", async () => {
       await createNewAccessToken("t");
 
       const lastPayload = mockSign.mock.calls[0][0];
       expect(lastPayload).toHaveProperty("userId", "u1");
       expect(lastPayload).toHaveProperty("email", "user@test.com");
       expect(lastPayload).toHaveProperty("role", "USER");
-      expect(lastPayload).not.toHaveProperty("tokenVersion");
+      expect(lastPayload).toHaveProperty("tokenVersion", 0);
     });
   });
 });

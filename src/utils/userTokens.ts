@@ -1,8 +1,9 @@
 import { JwtPayload } from "jsonwebtoken";
 import { envVars } from "../config/env.js";
-import { IsActive, IUser } from "../modules/user/user.interface.js";
+import { IUser } from "../modules/user/user.interface.js";
 import { generateToken, verifyToken } from "./jwt.js";
 import { User } from "../modules/user/user.model.js";
+import { assertUserActive } from "./checkUserStatus.js";
 import AppError from "../errorHelpers/AppError.js";
 import httpStatus from "http-status-codes";
 
@@ -60,23 +61,13 @@ const createNewAccessToken = async (refreshToken: string) => {
   if (!isUserExist) {
     throw new AppError(httpStatus.BAD_REQUEST, "User not found");
   }
-  if (
-    isUserExist.isActive === IsActive.BLOCKED ||
-    isUserExist.isActive === IsActive.INACTIVE
-  ) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      `User is ${isUserExist.isActive}`,
-    );
-  }
-  if (isUserExist.isDeleted) {
-    throw new AppError(httpStatus.BAD_REQUEST, "User is deleted");
-  }
+  assertUserActive(isUserExist);
 
   const jwtPayload = {
     userId: isUserExist._id,
     email: isUserExist.email,
     role: isUserExist.role,
+    tokenVersion: isUserExist.tokenVersion,
   };
   const accessToken = generateToken(
     jwtPayload,

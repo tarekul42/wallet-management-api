@@ -4,9 +4,9 @@ import { envVars } from "../config/env.js";
 import { verifyToken } from "../utils/jwt.js";
 import { JwtPayload } from "jsonwebtoken";
 import { User } from "../modules/user/user.model.js";
-import { IsActive } from "../modules/user/user.interface.js";
 import catchAsync from "../utils/catchAsync.js";
 import httpStatus from "http-status-codes";
+import { assertUserActive, assertUserVerified } from "../utils/checkUserStatus.js";
 
 const checkAuth = (...authRoles: string[]) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -44,26 +44,8 @@ const checkAuth = (...authRoles: string[]) =>
       );
     }
 
-    if (user.isDeleted) {
-      throw new AppError(
-        httpStatus.UNAUTHORIZED,
-        "This account has been deleted.",
-      );
-    }
-
-    if (user.isActive === IsActive.BLOCKED) {
-      throw new AppError(
-        httpStatus.FORBIDDEN,
-        "This account has been blocked.",
-      );
-    }
-
-    if (!user.isVerified) {
-      throw new AppError(
-        httpStatus.UNAUTHORIZED,
-        "Your account is not verified.",
-      );
-    }
+    assertUserActive(user);
+    assertUserVerified(user);
 
     if (authRoles.length > 0 && !authRoles.includes(user.role)) {
       const roleLabel = user.role === "SUPER_ADMIN" ? "Super Admins" : user.role === "ADMIN" ? "Admins" : user.role === "AGENT" ? "Agents" : user.role;

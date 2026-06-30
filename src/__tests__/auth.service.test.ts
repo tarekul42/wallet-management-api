@@ -361,7 +361,7 @@ describe("AuthServices.registerUser", () => {
     expect(authService.registerUser(validPayload)).rejects.toHaveProperty("statusCode", 500);
     expect(authService.registerUser(validPayload)).rejects.toHaveProperty(
       "message",
-      expect.stringContaining("Failed to register user")
+      expect.stringContaining("User creation failed")
     );
     expect(mockSession.abortTransaction).toHaveBeenCalled();
     expect(mockSession.endSession).toHaveBeenCalled();
