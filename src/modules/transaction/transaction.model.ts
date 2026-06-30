@@ -24,7 +24,7 @@ const transactionSchema = new Schema<ITransaction, TransactionModel>(
     amount: {
       type: Number,
       required: true,
-      min: [0, "Amount cannot be negative"],
+      min: [0.01, "Amount must be at least 0.01"],
     },
     fee: {
       type: Number,

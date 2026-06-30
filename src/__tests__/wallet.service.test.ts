@@ -7,7 +7,14 @@ import { StatusCodes } from "http-status-codes";
 
 const mockUserFindById = mock(() => Promise.resolve(null));
 const mockWalletFindById = mock(() => Promise.resolve(null));
-const mockWalletFind = mock(() => Promise.resolve([]));
+const mockWalletFind = mock(() => {
+  const chain = {
+    skip: mock(() => chain),
+    limit: mock(() => Promise.resolve([])),
+  };
+  return chain;
+});
+const mockWalletCount = mock(() => Promise.resolve(0));
 const mockNotifyWalletBlocked = mock(() => undefined);
 const mockNotifyWalletUnblocked = mock(() => undefined);
 
@@ -40,7 +47,7 @@ mock.module("../modules/user/user.model", () => ({
 }));
 
 mock.module("../modules/wallet/wallet.model", () => ({
-  Wallet: { findById: mockWalletFindById, find: mockWalletFind },
+  Wallet: { findById: mockWalletFindById, find: mockWalletFind, countDocuments: mockWalletCount },
 }));
 
 // =========================================================================
@@ -144,26 +151,41 @@ describe("WalletServices", () => {
   // getAllWallets
   // =========================================================================
   describe("getAllWallets", () => {
+    function setupMockFind(result: unknown[]) {
+      const chain = {
+        skip: mock(() => chain),
+        limit: mock(() => Promise.resolve(result)),
+      };
+      mockWalletFind.mockImplementation(() => chain);
+    }
+
+    beforeEach(() => {
+      mockWalletCount.mockImplementation(() => Promise.resolve(0));
+    });
+
     test("returns all wallets when no status filter is provided", async () => {
       const wallets = [
         createMockWallet(),
         createMockWallet({ _id: "wallet-2", balance: 200 }),
       ];
-      mockWalletFind.mockImplementation(() => Promise.resolve(wallets));
+      setupMockFind(wallets);
+      mockWalletCount.mockImplementation(() => Promise.resolve(wallets.length));
 
       const result = await WalletServices.getAllWallets({});
 
-      expect(result).toEqual(wallets);
+      expect(result.data).toEqual(wallets);
+      expect(result.meta.total).toBe(2);
       expect(mockWalletFind).toHaveBeenCalledWith({});
     });
 
     test("filters wallets by a valid ACTIVE status", async () => {
       const wallets = [createMockWallet({ status: WalletStatus.ACTIVE })];
-      mockWalletFind.mockImplementation(() => Promise.resolve(wallets));
+      setupMockFind(wallets);
+      mockWalletCount.mockImplementation(() => Promise.resolve(wallets.length));
 
       const result = await WalletServices.getAllWallets({ status: "ACTIVE" });
 
-      expect(result).toEqual(wallets);
+      expect(result.data).toEqual(wallets);
       expect(mockWalletFind).toHaveBeenCalledWith({
         status: WalletStatus.ACTIVE,
       });
@@ -173,11 +195,12 @@ describe("WalletServices", () => {
       const blockedWallet = createMockWallet({
         status: WalletStatus.BLOCKED,
       });
-      mockWalletFind.mockImplementation(() => Promise.resolve([blockedWallet]));
+      setupMockFind([blockedWallet]);
+      mockWalletCount.mockImplementation(() => Promise.resolve(1));
 
       const result = await WalletServices.getAllWallets({ status: "BLOCKED" });
 
-      expect(result).toEqual([blockedWallet]);
+      expect(result.data).toEqual([blockedWallet]);
       expect(mockWalletFind).toHaveBeenCalledWith({
         status: WalletStatus.BLOCKED,
       });
@@ -208,13 +231,15 @@ describe("WalletServices", () => {
     });
 
     test("returns empty array when no wallets match the filter", async () => {
-      mockWalletFind.mockImplementation(() => Promise.resolve([]));
+      setupMockFind([]);
+      mockWalletCount.mockImplementation(() => Promise.resolve(0));
 
       const result = await WalletServices.getAllWallets({
         status: "BLOCKED",
       });
 
-      expect(result).toEqual([]);
+      expect(result.data).toEqual([]);
+      expect(result.meta.total).toBe(0);
       expect(mockWalletFind).toHaveBeenCalledWith({
         status: WalletStatus.BLOCKED,
       });

@@ -25,7 +25,8 @@ const getAllWallets = catchAsync(async (req: Request, res: Response) => {
     success: true,
     statusCode: StatusCodes.OK,
     message: "Wallets retrieved successfully",
-    data: result,
+    data: result.data,
+    meta: result.meta,
   });
 });
 

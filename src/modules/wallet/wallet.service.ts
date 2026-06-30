@@ -23,26 +23,28 @@ const getMyWallet = async (userId: string) => {
 
 const getAllWallets = async (
   query: Record<string, unknown>
-): Promise<IWallet[]> => {
+): Promise<{ data: IWallet[]; meta: { page: number; limit: number; total: number; totalPage: number } }> => {
   const filter: mongoose.FilterQuery<IWallet> = {};
 
-  if (query.status) {
-    if (typeof query.status !== "string") {
+  const { status, page: pageParam, limit: limitParam } = query as { status?: string; page?: number; limit?: number };
+
+  if (status) {
+    if (!Object.values(WalletStatus).includes(status as WalletStatus)) {
       throw new AppError(StatusCodes.BAD_REQUEST, "Invalid wallet status.");
     }
-
-    const rawStatus = query.status as string;
-
-    if (!Object.values(WalletStatus).includes(rawStatus as WalletStatus)) {
-      throw new AppError(StatusCodes.BAD_REQUEST, "Invalid wallet status.");
-    }
-
-    const validatedStatus = rawStatus as WalletStatus;
-    filter.status = validatedStatus;
+    filter.status = status as WalletStatus;
   }
 
-  const wallets = await Wallet.find(filter);
-  return wallets;
+  const page = Math.max(1, Number(pageParam) || 1);
+  const limit = Math.min(100, Math.max(1, Number(limitParam) || 20));
+  const skip = (page - 1) * limit;
+
+  const [wallets, total] = await Promise.all([
+    Wallet.find(filter).skip(skip).limit(limit),
+    Wallet.countDocuments(filter),
+  ]);
+
+  return { data: wallets, meta: { page, limit, total, totalPage: Math.ceil(total / limit) } };
 };
 
 const getSingleWallet = async (walletId: string): Promise<IWallet> => {

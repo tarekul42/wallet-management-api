@@ -21,9 +21,7 @@ const checkAuth = (...authRoles: string[]) =>
     const token = authHeader.split(" ")[1];
 
     if (!token) {
-      return next(
-        new AppError(httpStatus.UNAUTHORIZED, "Access token not found"),
-      );
+      throw new AppError(httpStatus.UNAUTHORIZED, "Access token not found");
     }
 
     const verifiedToken = (await verifyToken(
